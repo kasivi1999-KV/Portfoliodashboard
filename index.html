@@ -1023,7 +1023,7 @@ function renderNetWorth(){
   eq.innerHTML=`<div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid rgba(26,37,64,.5)"><span style="font-size:11px;color:var(--text2)">🇮🇳 India Equity</span><span style="font-family:'Space Mono',monospace;font-size:11px;font-weight:700">${fI(nw.iVal)}</span></div><div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid rgba(26,37,64,.5)"><span style="font-size:11px;color:var(--text2)">🌍 Global Equity</span><span style="font-family:'Space Mono',monospace;font-size:11px;font-weight:700">${fI(nw.gVal)}</span></div><div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid rgba(26,37,64,.5)"><span style="font-size:11px;color:var(--text2)">💰 SIP Portfolio</span><span style="font-family:'Space Mono',monospace;font-size:11px;font-weight:700">${fI(nw.sVal)}</span></div>${D.india.filter(h=>h.pledged==='Yes').length?`<div style="display:flex;justify-content:space-between;padding:7px 0"><span style="font-size:11px;color:var(--orange)">🔒 Pledged Collateral</span><span style="font-family:'Space Mono',monospace;font-size:11px;font-weight:700;color:var(--orange)">${fI(D.india.filter(h=>h.pledged==='Yes').reduce((s,h)=>s+h.qty*h.cmp,0))}</span></div>`:''}`;
   const al=document.getElementById('nw-assets-list');
   if(!D.assets.length){al.innerHTML='<div class="empty"><div class="empty-i">🏦</div>Add FDs, bonds, gold here</div>';}
-  else{al.innerHTML=D.assets.map(a=>`<div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid rgba(26,37,64,.5)"><div><div style="font-size:11px;color:var(--text2)">${a.name}</div><div style="font-size:9px;color:var(--text3);font-family:'Space Mono',monospace">${a.cat} · ${a.liq}</div></div><div style="font-family:'Space Mono',monospace;font-size:11px;font-weight:700">${fI(a.val)}</div></div>`).join('');}
+  else{al.innerHTML=D.assets.map(a=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid rgba(26,37,64,.5)"><div><div style="font-size:11px;color:var(--text2)">${a.name}</div><div style="font-size:9px;color:var(--text3);font-family:'Space Mono',monospace">${a.cat} · ${a.liq} · ${a.ret?a.ret+'% PA':''}</div></div><div style="display:flex;align-items:center;gap:8px"><span style="font-family:'Space Mono',monospace;font-size:11px;font-weight:700">${fI(a.val)}</span><button class="btn btn-o btn-sm" onclick="editAsset(${a.id})">✎</button><button class="btn btn-d btn-sm" onclick="delAsset(${a.id})">✕</button></div></div>`).join('');}
   const now=new Date();
   const closedO=D.opts.filter(o=>o.status==='Closed'&&new Date(o.date).getMonth()===now.getMonth());
   const oInc=closedO.reduce((s,o)=>s+(o.pnl||0),0);
@@ -1454,7 +1454,20 @@ function renderLiabilities(){
 // ===== ASSETS =====
 function addAsset(){
   D.assets.push({id:Date.now(),name:document.getElementById('as-name').value,cat:document.getElementById('as-cat').value,val:parseFloat(document.getElementById('as-val').value)||0,inv:parseFloat(document.getElementById('as-inv').value)||0,ret:parseFloat(document.getElementById('as-ret').value)||0,liq:document.getElementById('as-liq').value,notes:document.getElementById('as-notes').value});
-  save('assets');closeModal('mo-add-asset');renderNetWorth();
+  save('assets');closeModal('mo-add-asset');renderNetWorth();toast('✓ Asset added','ok');
+}
+function delAsset(id){
+  if(!confirm('Delete this asset?'))return;
+  D.assets=D.assets.filter(a=>a.id!==id);
+  save('assets');renderNetWorth();toast('✓ Asset deleted','ok');
+}
+function editAsset(id){
+  const a=D.assets.find(x=>x.id===id);if(!a)return;
+  const newVal=prompt('Update value for "'+a.name+'" (₹):',a.val);
+  if(newVal===null)return;
+  if(isNaN(newVal)||newVal===''){alert('Enter a valid number');return;}
+  a.val=parseFloat(newVal);
+  save('assets');renderNetWorth();toast('✓ '+a.name+' updated','ok');
 }
 
 // ===== JOURNAL =====
