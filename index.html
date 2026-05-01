@@ -579,15 +579,14 @@ textarea{resize:vertical;min-height:60px}
   <div class="mbox">
     <div class="mhdr"><div class="mtitle" id="edit-india-title">Edit Holding</div><button class="mclose" onclick="closeModal('mo-edit-india')">✕</button></div>
     <input type="hidden" id="edit-india-id">
-    <div style="background:rgba(0,229,160,.06);border:1px solid rgba(0,229,160,.15);border-radius:6px;padding:12px;margin-bottom:14px">
-      <div style="font-family:'Space Mono',monospace;font-size:9px;color:var(--green);font-weight:700;letter-spacing:.1em;text-transform:uppercase;margin-bottom:10px">+ ADD MORE SHARES (auto-calculates new average)</div>
+    <div style="background:rgba(0,229,160,.06);border:1px solid rgba(0,229,160,.15);border-radius:6px;padding:12px;margin-bottom:12px">
+      <div style="font-family:'Space Mono',monospace;font-size:9px;color:var(--green);font-weight:700;letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px">+ ADD MORE SHARES (auto-calculates new average)</div>
       <div class="fr c3">
         <div class="fg"><label>New Qty to Add</label><input type="number" id="edit-add-qty" placeholder="10" min="0"></div>
         <div class="fg"><label>Buy Price (₹)</label><input type="number" id="edit-add-price" placeholder="1450" step="0.01"></div>
         <div class="fg"><label>Broker Fee (₹)</label><input type="number" id="edit-add-fee" placeholder="20" value="0"></div>
       </div>
     </div>
-    <div style="font-family:'Space Mono',monospace;font-size:9px;color:var(--text3);font-weight:700;letter-spacing:.1em;text-transform:uppercase;margin-bottom:10px">UPDATE EXISTING DETAILS</div>
     <div class="fr c3">
       <div class="fg"><label>Current Total Qty</label><input type="number" id="edit-qty" placeholder="100"></div>
       <div class="fg"><label>Avg Price (₹)</label><input type="number" id="edit-avg" placeholder="1500" step="0.01"></div>
@@ -598,12 +597,13 @@ textarea{resize:vertical;min-height:60px}
       <div class="fg"><label>Pledged?</label><select id="edit-pledged"><option>No</option><option>Yes</option></select></div>
     </div>
     <div class="fr c2">
-      <div class="fg"><label>Yahoo Symbol</label><input type="text" id="edit-yahoo" placeholder="INFY.NS"></div>
+      <div class="fg"><label>Yahoo Symbol</label><input type="text" id="edit-yahoo" placeholder="INFY.NS · WIPRO.NS"></div>
       <div class="fg"><label>Notes</label><input type="text" id="edit-notes" placeholder="Your notes..."></div>
     </div>
-    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:6px">
+    <!-- Sticky save bar always visible -->
+    <div style="position:sticky;bottom:0;background:var(--card);padding:12px 0 4px;border-top:1px solid var(--border);margin-top:12px;display:flex;gap:8px;justify-content:flex-end">
       <button class="btn btn-s" onclick="closeModal('mo-edit-india')">Cancel</button>
-      <button class="btn btn-p" onclick="saveEditIndia()">Save Changes</button>
+      <button class="btn btn-p" onclick="saveEditIndia()" style="min-width:120px">✓ Save Changes</button>
     </div>
   </div>
 </div>
@@ -631,9 +631,9 @@ textarea{resize:vertical;min-height:60px}
       <div class="fg"><label>Yahoo Symbol</label><input type="text" id="edit-gl-yahoo" placeholder="NVDA · TSM · 7203.T"></div>
       <div class="fg"><label>Notes</label><input type="text" id="edit-gl-notes" placeholder="Your thesis..."></div>
     </div>
-    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:6px">
+    <div style="position:sticky;bottom:0;background:var(--card);padding:12px 0 4px;border-top:1px solid var(--border);margin-top:12px;display:flex;gap:8px;justify-content:flex-end">
       <button class="btn btn-s" onclick="closeModal('mo-edit-global')">Cancel</button>
-      <button class="btn btn-p" onclick="saveEditGlobal()">Save Changes</button>
+      <button class="btn btn-p" onclick="saveEditGlobal()" style="min-width:120px">✓ Save Changes</button>
     </div>
   </div>
 </div>
@@ -790,6 +790,18 @@ const setCls=(id,cls)=>{const e=document.getElementById(id);if(e)e.className=cls
 // ===== CLOCK =====
 setInterval(()=>setEl('clock',new Date().toLocaleTimeString('en-IN')),1000);
 
+// ===== TOAST NOTIFICATION =====
+function toast(msg,type='ok'){
+  let t=document.getElementById('toast');
+  if(!t){t=document.createElement('div');t.id='toast';t.style.cssText='position:fixed;bottom:24px;left:50%;transform:translateX(-50%);padding:10px 20px;border-radius:6px;font-family:Space Mono,monospace;font-size:11px;font-weight:700;z-index:9999;transition:opacity .3s;pointer-events:none';document.body.appendChild(t);}
+  t.textContent=msg;
+  t.style.background=type==='ok'?'var(--green)':type==='err'?'var(--red)':'var(--gold)';
+  t.style.color=type==='ok'?'#000':'#fff';
+  t.style.opacity='1';
+  clearTimeout(t._timer);
+  t._timer=setTimeout(()=>t.style.opacity='0',2500);
+}
+
 // ===== CLOUD SYNC (JSONBin) =====
 const JBIN='https://api.jsonbin.io/v3/b';
 let cloudKey=localStorage.getItem('jbin_key')||'';
@@ -822,7 +834,7 @@ async function cloudSave(manual=false){
     }
     localStorage.setItem('jbin_lastsync',new Date().toLocaleString('en-IN'));
     showCloudStatus('ok');
-    if(manual)alert('✓ Saved to cloud successfully');
+    if(manual){alert('✓ Saved to cloud successfully');}else{toast('☁ Cloud saved','ok');}
   }catch(e){
     showCloudStatus('err');
     if(manual)alert('Cloud save failed: '+e.message+'\nCheck your API key in ☁ Cloud Sync settings.');
@@ -1133,7 +1145,7 @@ function addGlobal(){
   const cmp=parseFloat(document.getElementById('gl-cmp').value);
   if(!sym||!shares||!avg||!cmp){alert('Fill required fields');return;}
   D.global.push({id:Date.now(),sym,name:document.getElementById('gl-name').value,country:document.getElementById('gl-country').value,currency:document.getElementById('gl-currency').value,platform:document.getElementById('gl-platform').value,shares,avg,cmp,brok:parseFloat(document.getElementById('gl-brok').value)||0,date:document.getElementById('gl-date').value,yahooSym:document.getElementById('gl-yahoo').value.trim(),notes:document.getElementById('gl-notes').value});
-  save('global');closeModal('mo-add-global');renderGlobal();buildTicker();
+  save('global');closeModal('mo-add-global');renderGlobal();buildTicker();toast('✓ '+sym+' added!');
 }
 function delGlobal(id){if(!confirm('Delete?'))return;D.global=D.global.filter(h=>h.id!==id);save('global');renderGlobal();buildTicker();}
 function addWire(){
@@ -1191,7 +1203,7 @@ function saveEditGlobal(){
   h.cmp=parseFloat(document.getElementById('edit-gl-cmp').value)||h.cmp;
   h.yahooSym=document.getElementById('edit-gl-yahoo').value.trim();
   h.notes=document.getElementById('edit-gl-notes').value;
-  save('global');closeModal('mo-edit-global');renderGlobal();buildTicker();
+  save('global');closeModal('mo-edit-global');renderGlobal();buildTicker();toast('✓ '+h.sym+' saved!');
 }
 function openEditIndia(id){
   const h=D.india.find(x=>x.id===id);if(!h)return;
@@ -1231,7 +1243,7 @@ function saveEditIndia(){
   h.pledged=document.getElementById('edit-pledged').value;
   h.yahooSym=document.getElementById('edit-yahoo').value.trim();
   h.notes=document.getElementById('edit-notes').value;
-  save('india');closeModal('mo-edit-india');renderIndia();buildTicker();
+  save('india');closeModal('mo-edit-india');renderIndia();buildTicker();toast('✓ '+h.sym+' saved!');
 }
 
 // ===== INDIA =====
@@ -1242,7 +1254,7 @@ function addIndia(){
   const cmp=parseFloat(document.getElementById('in-cmp').value);
   if(!sym||!qty||!avg||!cmp){alert('Fill required fields');return;}
   D.india.push({id:Date.now(),sym,type:document.getElementById('in-type').value,sector:document.getElementById('in-sector').value,broker:document.getElementById('in-broker').value,qty,avg,cmp,charges:parseFloat(document.getElementById('in-charges').value)||0,date:document.getElementById('in-date').value,pledged:document.getElementById('in-pledged').value,yahooSym:document.getElementById('in-yahoo').value.trim(),notes:document.getElementById('in-notes').value});
-  save('india');closeModal('mo-add-india');renderIndia();buildTicker();
+  save('india');closeModal('mo-add-india');renderIndia();buildTicker();toast('✓ '+sym+' added!');
 }
 function delIndia(id){if(!confirm('Delete?'))return;D.india=D.india.filter(h=>h.id!==id);save('india');renderIndia();buildTicker();}
 function importCSV(e){const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>{const lines=ev.target.result.split('\n').slice(1);let n=0;lines.forEach(l=>{const c=l.split(',');if(c.length>=5){D.india.push({id:Date.now()+Math.random(),sym:(c[0]||'').trim().toUpperCase(),type:(c[1]||'Equity').trim(),sector:(c[2]||'Other').trim(),broker:(c[3]||'Zerodha').trim(),qty:parseFloat(c[4])||0,avg:parseFloat(c[5])||0,cmp:parseFloat(c[6])||0,charges:parseFloat(c[7])||0,date:(c[8]||'').trim(),pledged:'No',notes:''});n++;}});save('india');renderIndia();buildTicker();alert('Imported '+n);};r.readAsText(f);}
