@@ -1501,15 +1501,11 @@ function updateSyncInfo(){
 }
 
 // ===== UTILS =====
-// ===== GOOGLE FINANCE PRICE API =====
-const GAS_URL='https://script.google.com/macros/s/AKfycbxNNSZd0XzNcBEqo46N2k0liNQ8Iq8Ah_F1NhE-zOnGXFUBVjgsM8GDJCO4noSthkogZw/exec';
-
 // ===== LIVE PRICE REFRESH =====
 async function refreshPrices(){
   const btn=document.querySelector('[onclick="refreshPrices()"]');
   if(btn){btn.textContent='⟳ Fetching...';btn.disabled=true;}
   let updated=0,failed=[];
-
   const tasks=[];
   D.india.forEach((h,i)=>{if(h.yahooSym)tasks.push({idx:i,src:'india',sym:h.yahooSym});});
   D.global.forEach((h,i)=>{if(h.yahooSym)tasks.push({idx:i,src:'global',sym:h.yahooSym});});
@@ -1517,24 +1513,23 @@ async function refreshPrices(){
 
   for(const t of tasks){
     try{
-      const r=await fetch(`${GAS_URL}?symbol=${encodeURIComponent(t.sym)}`);
+      const yfUrl=`https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(t.sym)}`;
+      const proxyUrl=`https://api.allorigins.win/get?url=${encodeURIComponent(yfUrl)}`;
+      const r=await fetch(proxyUrl);
       if(!r.ok)throw new Error('HTTP '+r.status);
-      const d=await r.json();
-      const price=parseFloat(d.price);
+      const proxied=await r.json();
+      const d=JSON.parse(proxied.contents);
+      const price=d?.chart?.result?.[0]?.meta?.regularMarketPrice;
       if(price&&price>0){
         const p=parseFloat(price.toFixed(2));
         if(t.src==='india')D.india[t.idx].cmp=p;
         else if(t.src==='global')D.global[t.idx].cmp=p;
         else D.sips[t.idx].nav=p;
         updated++;
-        toast('✓ '+t.sym+' → '+p,'ok');
-      }else{
-        failed.push(t.sym);
-      }
-    }catch(e){
-      failed.push(t.sym);
-    }
-    await new Promise(res=>setTimeout(res,2500));
+        toast('✓ '+t.sym+' → ₹'+p,'ok');
+      }else{failed.push(t.sym);}
+    }catch(e){failed.push(t.sym);}
+    await new Promise(res=>setTimeout(res,800));
   }
 
   // MF NAV from AMFI
@@ -1544,31 +1539,19 @@ async function refreshPrices(){
     try{
       const r=await fetch('https://api.mfapi.in/mf/'+s.amfiCode+'/latest');
       const d=await r.json();
-      if(d.data&&d.data[0]){
-        D.sips[i].nav=parseFloat(parseFloat(d.data[0].nav).toFixed(2));
-        updated++;
-      }
+      if(d.data&&d.data[0]){D.sips[i].nav=parseFloat(parseFloat(d.data[0].nav).toFixed(2));updated++;}
     }catch(e){failed.push(s.name);}
     await new Promise(res=>setTimeout(res,500));
   }
 
-  SS('v3_india',D.india);
-  SS('v3_global',D.global);
-  SS('v3_sips',D.sips);
-
-  buildTicker();
-  renderNetWorth();
-  renderIndia();
-  renderGlobal();
-  renderSIP();
-  renderPortfolio();
-
+  SS('v3_india',D.india);SS('v3_global',D.global);SS('v3_sips',D.sips);
+  buildTicker();renderNetWorth();renderIndia();renderGlobal();renderSIP();renderPortfolio();
   if(btn){btn.textContent='⟳ Live Prices';btn.disabled=false;}
 
   if(tasks.length===0&&D.sips.filter(s=>s.amfiCode).length===0){
-    alert('No symbols set.\n\nEdit each stock → fill Yahoo Symbol field:\nNSE India: NSE:INFY · NSE:WIPRO · NSE:TCS\nUS stocks: NASDAQ:NVDA · NASDAQ:MSFT\nJapan: TYO:7203  Korea: KRX:005930');
+    alert('No symbols set.\n\nEdit each stock → Yahoo Symbol:\nNSE stocks: INFY.NS · WIPRO.NS · TCS.NS\nUS stocks: NVDA · MSFT · GOOGL');
   }else if(updated===0){
-    alert('0 prices updated.\nFailed symbols: '+failed.join(', ')+'\n\nCheck symbol format:\nNSE:INFY · NSE:WIPRO · NASDAQ:NVDA');
+    alert('0 prices updated.\nFailed: '+failed.join(', ')+'\n\nUse .NS for NSE stocks: INFY.NS not INFY');
   }else{
     toast('✓ '+updated+' prices updated'+(failed.length?' · '+failed.length+' failed':''),'ok');
     cloudSave(false);
@@ -1581,7 +1564,6 @@ function dl(name,text){const a=document.createElement('a');a.href='data:applicat
 initBudgetMonths();
 fetchFX();
 buildTicker();
-// Check URL for key param — if found, auto-connect
 (async()=>{
   const urlKey=new URLSearchParams(window.location.search).get('key');
   if(urlKey&&urlKey.startsWith('$2')&&urlKey!==cloudKey){
@@ -1592,8 +1574,8 @@ buildTicker();
   if(cloudKey&&cloudBin){
     showCloudStatus('idle');
     await cloudLoad(false);
+    refreshPrices();
   }else if(cloudKey&&!cloudBin){
-    // Has key but no bin — search for existing
     showCloudStatus('pending');
     try{
       const r=await fetch('https://api.jsonbin.io/v3/b?sortBy=createdAt&order=desc',{headers:{'X-Master-Key':cloudKey}});
@@ -1602,13 +1584,14 @@ buildTicker();
         const existing=(d||[]).find(b=>b.record?.appId==='kasi-portfolio-v3');
         if(existing){
           cloudBin=existing.snippetMeta?.id||existing.id||'';
-          if(cloudBin){localStorage.setItem('jbin_bin',cloudBin);await cloudLoad(false);return;}
+          if(cloudBin){localStorage.setItem('jbin_bin',cloudBin);await cloudLoad(false);refreshPrices();return;}
         }
       }
     }catch(e){}
     renderNetWorth();showCloudStatus('err');
   }else{
     renderNetWorth();
+    refreshPrices();
   }
 })();
 updateSyncInfo();
