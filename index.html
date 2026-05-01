@@ -1506,52 +1506,64 @@ async function refreshPrices(){
   if(btn){btn.textContent='⟳ Fetching...';btn.disabled=true;}
   let updated=0,failed=[];
 
-  // Collect all Yahoo symbols
-  const indiaSyms=D.india.filter(h=>h.yahooSym).map(h=>({obj:h,sym:h.yahooSym,type:'india'}));
-  const globalSyms=D.global.filter(h=>h.yahooSym).map(h=>({obj:h,sym:h.yahooSym,type:'global'}));
-  const sipSyms=D.sips.filter(s=>s.yahooSym&&!s.amfiCode).map(s=>({obj:s,sym:s.yahooSym,type:'sip'}));
-  const allYahoo=[...indiaSyms,...globalSyms,...sipSyms];
+  // Build index-based tasks to avoid reference issues
+  const tasks=[];
+  D.india.forEach((h,i)=>{if(h.yahooSym)tasks.push({idx:i,src:'india',sym:h.yahooSym});});
+  D.global.forEach((h,i)=>{if(h.yahooSym)tasks.push({idx:i,src:'global',sym:h.yahooSym});});
+  D.sips.forEach((h,i)=>{if(h.yahooSym&&!h.amfiCode)tasks.push({idx:i,src:'sip',sym:h.yahooSym});});
 
-  // Fetch each symbol individually using Yahoo Finance v8 (CORS-friendly)
-  for(const item of allYahoo){
+  for(const t of tasks){
     try{
-      const url=`https://query2.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(item.sym)}?interval=1d&range=1d`;
-      const r=await fetch(url,{headers:{'Accept':'application/json'}});
-      if(!r.ok)throw new Error(r.status);
+      const url=`https://query2.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(t.sym)}?interval=1d&range=1d`;
+      const r=await fetch(url);
+      if(!r.ok)throw new Error('HTTP '+r.status);
       const d=await r.json();
       const price=d?.chart?.result?.[0]?.meta?.regularMarketPrice;
-      if(price){
-        if(item.type==='india'||item.type==='global')item.obj.cmp=price;
-        else item.obj.nav=price;
+      if(price&&price>0){
+        const p=parseFloat(price.toFixed(2));
+        if(t.src==='india')D.india[t.idx].cmp=p;
+        else if(t.src==='global')D.global[t.idx].cmp=p;
+        else D.sips[t.idx].nav=p;
         updated++;
-      }else{failed.push(item.sym);}
-    }catch(e){failed.push(item.sym);}
+      }else{failed.push(t.sym+'(no price)');}
+    }catch(e){failed.push(t.sym+'('+e.message+')');}
+    await new Promise(res=>setTimeout(res,400));
   }
 
-  if(allYahoo.length){save('india');save('global');save('sips');}
-
   // MF NAV from AMFI
-  for(const s of D.sips.filter(s=>s.amfiCode)){
+  for(let i=0;i<D.sips.length;i++){
+    const s=D.sips[i];
+    if(!s.amfiCode)continue;
     try{
       const r=await fetch('https://api.mfapi.in/mf/'+s.amfiCode+'/latest');
       const d=await r.json();
-      if(d.data&&d.data[0]){s.nav=parseFloat(d.data[0].nav);updated++;}
+      if(d.data&&d.data[0]){D.sips[i].nav=parseFloat(parseFloat(d.data[0].nav).toFixed(2));updated++;}
     }catch(e){failed.push(s.name);}
+    await new Promise(res=>setTimeout(res,200));
   }
-  if(D.sips.filter(s=>s.amfiCode).length)save('sips');
 
+  // Explicitly save to localStorage by value
+  SS('v3_india',D.india);
+  SS('v3_global',D.global);
+  SS('v3_sips',D.sips);
+
+  // Force refresh all sections
   buildTicker();
-  const at=document.querySelector('.sec.active')?.id?.replace('tab-','');
-  if(at&&tabMap[at])tabMap[at]();
   renderNetWorth();
+  renderIndia();
+  renderGlobal();
+  renderSIP();
+  renderPortfolio();
+
   if(btn){btn.textContent='⟳ Live Prices';btn.disabled=false;}
 
-  if(!allYahoo.length&&!D.sips.filter(s=>s.amfiCode).length){
-    alert('No Yahoo symbols set yet.\n\nEdit any holding and add Yahoo Symbol:\n• NSE stocks: INFY.NS  WIPRO.NS  TCS.NS\n• US stocks:  NVDA  MSFT  GOOGL\n• Japan:      7203.T\n• Korea:      005930.KS\n\nFor MF: add AMFI code in SIP tab');
-  }else if(updated===0&&failed.length){
-    alert('⚠ All fetches failed. Possible reasons:\n1. Yahoo symbols wrong (use INFY.NS not INFY for NSE)\n2. Internet issue\n3. Yahoo rate limit — try again in 1 min\n\nFailed: '+failed.slice(0,5).join(', '));
+  if(tasks.length===0&&D.sips.filter(s=>s.amfiCode).length===0){
+    alert('No Yahoo symbols set.\n\nEdit any stock → add Yahoo Symbol:\nNSE: INFY.NS · WIPRO.NS · TCS.NS\nUS: NVDA · MSFT · GOOGL\nJapan: 7203.T  Korea: 005930.KS');
+  }else if(updated===0){
+    alert('⚠ 0 prices updated.\nFailed: '+failed.join(', ')+'\n\nCheck:\n1. Symbol correct? Use INFY.NS not INFY\n2. Yahoo Finance rate limited? Wait 1 min\n3. Internet connection OK?');
   }else{
-    toast('✓ Updated '+updated+' price(s)'+(failed.length?' · '+failed.length+' failed':''),'ok');
+    toast('✓ '+updated+' price(s) updated'+(failed.length?' · '+failed.length+' failed':''),'ok');
+    cloudSave(false);
   }
 }
 
