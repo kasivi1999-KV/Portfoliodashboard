@@ -20,7 +20,7 @@ body::before{content:'';position:fixed;top:0;left:0;right:0;bottom:0;background:
 .fx-status{font-size:9px;color:var(--text3);cursor:pointer}
 .fx-status:hover{color:var(--green)}
 .ticker-wrap{background:var(--bg2);border-bottom:1px solid var(--border);padding:4px 0;overflow:hidden;white-space:nowrap}
-.ticker-inner{display:inline-block;animation:scroll 70s linear infinite}
+.ticker-inner{display:inline-block;animation:scroll 120s linear infinite}
 .ticker-inner:hover{animation-play-state:paused}
 .t-item{display:inline-block;margin-right:32px;font-family:'Space Mono',monospace;font-size:10px}
 .t-sym{color:var(--text);font-weight:700;margin-right:4px}
@@ -220,14 +220,14 @@ textarea{resize:vertical;min-height:60px}
     <div class="card">
       <div class="ctitle">Income Sources <button class="ctitle-btn" onclick="openModal('mo-add-income')">+ add</button></div>
       <div class="twrap"><table>
-        <thead><tr><th>Date</th><th>Source</th><th>Category</th><th>Amount</th><th>Notes</th><th>Del</th></tr></thead>
+        <thead><tr><th>Date</th><th>Source</th><th>Category</th><th>Amount</th><th>Notes</th><th>Edit</th><th>Del</th></tr></thead>
         <tbody id="income-tbody"></tbody>
       </table></div>
     </div>
     <div class="card">
       <div class="ctitle">Expenses <button class="ctitle-btn" onclick="openModal('mo-add-expense')">+ add</button></div>
       <div class="twrap"><table>
-        <thead><tr><th>Date</th><th>Category</th><th>Description</th><th>Amount</th><th>Del</th></tr></thead>
+        <thead><tr><th>Date</th><th>Category</th><th>Description</th><th>Amount</th><th>Edit</th><th>Del</th></tr></thead>
         <tbody id="expense-tbody"></tbody>
       </table></div>
     </div>
@@ -296,6 +296,7 @@ textarea{resize:vertical;min-height:60px}
     <div class="stitle">🇮🇳 India <span>Holdings</span></div>
     <div class="sacts">
       <label class="btn btn-s btn-sm" style="cursor:pointer">↑ CSV<input type="file" accept=".csv" style="display:none" onchange="importCSV(event)"></label>
+      <button class="btn btn-s btn-sm" onclick="exportIndiaCSV()">↓ Export</button>
       <button class="btn btn-p btn-sm" onclick="openModal('mo-add-india')">+ Add</button>
     </div>
   </div>
@@ -423,7 +424,10 @@ textarea{resize:vertical;min-height:60px}
 <div class="sec" id="tab-journal">
   <div class="shdr">
     <div class="stitle">📓 Trading <span>Journal</span></div>
-    <div class="sacts"><button class="btn btn-p btn-sm" onclick="openModal('mo-add-journal')">+ Entry</button></div>
+    <div class="sacts">
+      <input type="text" id="j-search" placeholder="Search journal..." style="width:160px;padding:5px 8px;font-size:11px" oninput="renderJournal()">
+      <button class="btn btn-p btn-sm" onclick="openModal('mo-add-journal')">+ Entry</button>
+    </div>
   </div>
   <div class="g4">
     <div class="card"><div class="mlabel">Total Entries</div><div class="mval" id="j-total">0</div></div>
@@ -741,6 +745,131 @@ textarea{resize:vertical;min-height:60px}
   </div>
 </div>
 
+<!-- Edit Income -->
+<div class="mo" id="mo-edit-income">
+  <div class="mbox">
+    <div class="mhdr"><div class="mtitle">Edit Income</div><button class="mclose" onclick="closeModal('mo-edit-income')">✕</button></div>
+    <input type="hidden" id="ei-id">
+    <div class="fr c2"><div class="fg"><label>Date</label><input type="date" id="ei-date"></div><div class="fg"><label>Category</label><select id="ei-cat"><option>Salary</option><option>Bonus</option><option>Bond/FD Interest</option><option>Rental Income</option><option>Dividend</option><option>Options Profit</option><option>Swing Profit</option><option>Freelance</option><option>Other</option></select></div></div>
+    <div class="fr c2"><div class="fg"><label>Source</label><input type="text" id="ei-src"></div><div class="fg"><label>Amount (₹)</label><input type="number" id="ei-amt"></div></div>
+    <div class="fg" style="margin-bottom:12px"><label>Notes</label><input type="text" id="ei-notes"></div>
+    <div style="position:sticky;bottom:0;background:var(--card);padding:10px 0 4px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end">
+      <button class="btn btn-s" onclick="closeModal('mo-edit-income')">Cancel</button>
+      <button class="btn btn-p" onclick="saveEditIncome()">✓ Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Expense -->
+<div class="mo" id="mo-edit-expense">
+  <div class="mbox">
+    <div class="mhdr"><div class="mtitle">Edit Expense</div><button class="mclose" onclick="closeModal('mo-edit-expense')">✕</button></div>
+    <input type="hidden" id="ee-id">
+    <div class="fr c2"><div class="fg"><label>Date</label><input type="date" id="ee-date"></div><div class="fg"><label>Category</label><select id="ee-cat"><option>Housing/Rent</option><option>Food & Groceries</option><option>Transport</option><option>SIP/Investment</option><option>Loan EMI</option><option>Entertainment</option><option>Medical</option><option>Utilities</option><option>Education</option><option>Clothing</option><option>Travel</option><option>Other</option></select></div></div>
+    <div class="fr c2"><div class="fg"><label>Description</label><input type="text" id="ee-desc"></div><div class="fg"><label>Amount (₹)</label><input type="number" id="ee-amt"></div></div>
+    <div style="position:sticky;bottom:0;background:var(--card);padding:10px 0 4px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end">
+      <button class="btn btn-s" onclick="closeModal('mo-edit-expense')">Cancel</button>
+      <button class="btn btn-p" onclick="saveEditExpense()">✓ Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Edit SIP -->
+<div class="mo" id="mo-edit-sip">
+  <div class="mbox">
+    <div class="mhdr"><div class="mtitle" id="edit-sip-title">Edit SIP</div><button class="mclose" onclick="closeModal('mo-edit-sip')">✕</button></div>
+    <input type="hidden" id="es-id">
+    <div class="fr c2"><div class="fg"><label>Fund Name</label><input type="text" id="es-name"></div><div class="fg"><label>Monthly Amount (₹)</label><input type="number" id="es-amt"></div></div>
+    <div class="fr c3"><div class="fg"><label>Total Invested (₹)</label><input type="number" id="es-invested"></div><div class="fg"><label>Units</label><input type="number" id="es-units" step="0.001"></div><div class="fg"><label>Current NAV (₹)</label><input type="number" id="es-nav" step="0.01"></div></div>
+    <div class="fr c2"><div class="fg"><label>AMFI Code</label><input type="text" id="es-amfi" placeholder="120503"></div><div class="fg"><label>Yahoo Symbol</label><input type="text" id="es-yahoo" placeholder="NIFTYBEES.NS"></div></div>
+    <div style="position:sticky;bottom:0;background:var(--card);padding:10px 0 4px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end">
+      <button class="btn btn-s" onclick="closeModal('mo-edit-sip')">Cancel</button>
+      <button class="btn btn-p" onclick="saveEditSIP()">✓ Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Trade -->
+<div class="mo" id="mo-edit-trade">
+  <div class="mbox">
+    <div class="mhdr"><div class="mtitle">Edit Trade</div><button class="mclose" onclick="closeModal('mo-edit-trade')">✕</button></div>
+    <input type="hidden" id="et-id">
+    <div class="fr c3"><div class="fg"><label>Date</label><input type="date" id="et-date"></div><div class="fg"><label>Symbol</label><input type="text" id="et-sym"></div><div class="fg"><label>Price</label><input type="number" id="et-price" step="0.01"></div></div>
+    <div class="fr c3"><div class="fg"><label>Qty</label><input type="number" id="et-qty"></div><div class="fg"><label>Broker Fee</label><input type="number" id="et-fee" step="0.01"></div><div class="fg"><label>Notes</label><input type="text" id="et-notes"></div></div>
+    <div style="position:sticky;bottom:0;background:var(--card);padding:10px 0 4px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end">
+      <button class="btn btn-s" onclick="closeModal('mo-edit-trade')">Cancel</button>
+      <button class="btn btn-p" onclick="saveEditTrade()">✓ Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Options Position -->
+<div class="mo" id="mo-edit-opt">
+  <div class="mbox">
+    <div class="mhdr"><div class="mtitle">Update Options Position</div><button class="mclose" onclick="closeModal('mo-edit-opt')">✕</button></div>
+    <input type="hidden" id="eo-id">
+    <div style="background:rgba(0,229,160,.06);border:1px solid rgba(0,229,160,.15);border-radius:5px;padding:10px;margin-bottom:12px;font-size:11px;color:var(--text2)">Update exit prices to close the position and calculate P&L automatically.</div>
+    <div class="leg"><div class="leg-t ce">▲ CE EXIT</div>
+      <div class="fr c2"><div class="fg"><label>CE Exit Price</label><input type="number" id="eo-ce-exit" placeholder="20" step="0.05"></div><div class="fg"><label>CE Strike (ref)</label><input type="text" id="eo-ce-strike" readonly style="opacity:.5"></div></div>
+    </div>
+    <div class="leg"><div class="leg-t pe">▼ PE EXIT</div>
+      <div class="fr c2"><div class="fg"><label>PE Exit Price</label><input type="number" id="eo-pe-exit" placeholder="15" step="0.05"></div><div class="fg"><label>PE Strike (ref)</label><input type="text" id="eo-pe-strike" readonly style="opacity:.5"></div></div>
+    </div>
+    <div class="fr c2"><div class="fg"><label>Status</label><select id="eo-status"><option>Open</option><option>Closed</option><option>Adjusted</option></select></div><div class="fg"><label>Notes</label><input type="text" id="eo-notes"></div></div>
+    <div style="position:sticky;bottom:0;background:var(--card);padding:10px 0 4px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end">
+      <button class="btn btn-s" onclick="closeModal('mo-edit-opt')">Cancel</button>
+      <button class="btn btn-p" onclick="saveEditOpt()">✓ Save & Recalculate P&L</button>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Loan -->
+<div class="mo" id="mo-edit-loan">
+  <div class="mbox">
+    <div class="mhdr"><div class="mtitle">Edit Loan</div><button class="mclose" onclick="closeModal('mo-edit-loan')">✕</button></div>
+    <input type="hidden" id="el-id">
+    <div class="fr c2"><div class="fg"><label>Loan Name</label><input type="text" id="el-name"></div><div class="fg"><label>Type</label><select id="el-type"><option>Gold Loan</option><option>Personal Loan</option><option>Home Loan</option><option>Car Loan</option><option>Overdraft / Line of Credit</option><option>Education Loan</option><option>Other</option></select></div></div>
+    <div class="fr c3"><div class="fg"><label>Principal (₹)</label><input type="number" id="el-principal"></div><div class="fg"><label>Rate %PA</label><input type="number" id="el-rate" step="0.1"></div><div class="fg"><label>EMI (₹)</label><input type="number" id="el-emi"></div></div>
+    <div class="fg" style="margin-bottom:12px"><label>Purpose</label><input type="text" id="el-purpose"></div>
+    <div style="position:sticky;bottom:0;background:var(--card);padding:10px 0 4px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end">
+      <button class="btn btn-s" onclick="closeModal('mo-edit-loan')">Cancel</button>
+      <button class="btn btn-p" onclick="saveEditLoan()">✓ Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Asset (full) -->
+<div class="mo" id="mo-edit-asset">
+  <div class="mbox">
+    <div class="mhdr"><div class="mtitle">Edit Asset</div><button class="mclose" onclick="closeModal('mo-edit-asset')">✕</button></div>
+    <input type="hidden" id="ea-id">
+    <div class="fr c2"><div class="fg"><label>Asset Name</label><input type="text" id="ea-name"></div><div class="fg"><label>Category</label><select id="ea-cat"><option>Fixed Deposit</option><option>PPF/EPF</option><option>Physical Gold</option><option>Private Bonds</option><option>Real Estate</option><option>Cash/Savings</option><option>Insurance</option><option>Crypto</option><option>Other</option></select></div></div>
+    <div class="fr c3"><div class="fg"><label>Current Value (₹)</label><input type="number" id="ea-val"></div><div class="fg"><label>Invested (₹)</label><input type="number" id="ea-inv"></div><div class="fg"><label>Return %PA</label><input type="number" id="ea-ret" step="0.1"></div></div>
+    <div class="fr c2"><div class="fg"><label>Liquidity</label><select id="ea-liq"><option>Liquid</option><option>Semi-liquid</option><option>Illiquid</option></select></div><div class="fg"><label>Notes</label><input type="text" id="ea-notes"></div></div>
+    <div style="position:sticky;bottom:0;background:var(--card);padding:10px 0 4px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end">
+      <button class="btn btn-s" onclick="closeModal('mo-edit-asset')">Cancel</button>
+      <button class="btn btn-p" onclick="saveEditAsset()">✓ Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Journal Entry -->
+<div class="mo" id="mo-edit-journal">
+  <div class="mbox">
+    <div class="mhdr"><div class="mtitle">Edit Journal Entry</div><button class="mclose" onclick="closeModal('mo-edit-journal')">✕</button></div>
+    <input type="hidden" id="ej-id">
+    <div class="fg" style="margin-bottom:8px"><label>Title</label><input type="text" id="ej-title"></div>
+    <div class="fg" style="margin-bottom:8px"><label>Setup / Rationale</label><textarea id="ej-entry"></textarea></div>
+    <div class="fg" style="margin-bottom:8px"><label>Outcome</label><textarea id="ej-exit"></textarea></div>
+    <div class="fg" style="margin-bottom:8px"><label>Lesson Learned</label><textarea id="ej-lesson"></textarea></div>
+    <div class="fr c3"><div class="fg"><label>Conviction (1-5)</label><select id="ej-conv"><option>5</option><option>4</option><option>3</option><option>2</option><option>1</option></select></div><div class="fg"><label>P&L (₹)</label><input type="number" id="ej-pnl"></div><div class="fg"><label>Tags</label><input type="text" id="ej-tags"></div></div>
+    <div style="position:sticky;bottom:0;background:var(--card);padding:10px 0 4px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end">
+      <button class="btn btn-s" onclick="closeModal('mo-edit-journal')">Cancel</button>
+      <button class="btn btn-p" onclick="saveEditJournal()">✓ Save</button>
+    </div>
+  </div>
+</div>
+
 <script>
 // ===== DATA LAYER =====
 const LS=k=>{try{return JSON.parse(localStorage.getItem(k))||null}catch{return null}};
@@ -1023,7 +1152,7 @@ function renderNetWorth(){
   eq.innerHTML=`<div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid rgba(26,37,64,.5)"><span style="font-size:11px;color:var(--text2)">🇮🇳 India Equity</span><span style="font-family:'Space Mono',monospace;font-size:11px;font-weight:700">${fI(nw.iVal)}</span></div><div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid rgba(26,37,64,.5)"><span style="font-size:11px;color:var(--text2)">🌍 Global Equity</span><span style="font-family:'Space Mono',monospace;font-size:11px;font-weight:700">${fI(nw.gVal)}</span></div><div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid rgba(26,37,64,.5)"><span style="font-size:11px;color:var(--text2)">💰 SIP Portfolio</span><span style="font-family:'Space Mono',monospace;font-size:11px;font-weight:700">${fI(nw.sVal)}</span></div>${D.india.filter(h=>h.pledged==='Yes').length?`<div style="display:flex;justify-content:space-between;padding:7px 0"><span style="font-size:11px;color:var(--orange)">🔒 Pledged Collateral</span><span style="font-family:'Space Mono',monospace;font-size:11px;font-weight:700;color:var(--orange)">${fI(D.india.filter(h=>h.pledged==='Yes').reduce((s,h)=>s+h.qty*h.cmp,0))}</span></div>`:''}`;
   const al=document.getElementById('nw-assets-list');
   if(!D.assets.length){al.innerHTML='<div class="empty"><div class="empty-i">🏦</div>Add FDs, bonds, gold here</div>';}
-  else{al.innerHTML=D.assets.map(a=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid rgba(26,37,64,.5)"><div><div style="font-size:11px;color:var(--text2)">${a.name}</div><div style="font-size:9px;color:var(--text3);font-family:'Space Mono',monospace">${a.cat} · ${a.liq} · ${a.ret?a.ret+'% PA':''}</div></div><div style="display:flex;align-items:center;gap:8px"><span style="font-family:'Space Mono',monospace;font-size:11px;font-weight:700">${fI(a.val)}</span><button class="btn btn-o btn-sm" onclick="editAsset(${a.id})">✎</button><button class="btn btn-d btn-sm" onclick="delAsset(${a.id})">✕</button></div></div>`).join('');}
+  else{al.innerHTML=D.assets.map(a=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid rgba(26,37,64,.5)"><div><div style="font-size:11px;color:var(--text2)">${a.name}</div><div style="font-size:9px;color:var(--text3);font-family:'Space Mono',monospace">${a.cat} · ${a.liq} · ${a.ret?a.ret+'% PA':''}</div></div><div style="display:flex;align-items:center;gap:8px"><span style="font-family:'Space Mono',monospace;font-size:11px;font-weight:700">${fI(a.val)}</span><button class="btn btn-o btn-sm" onclick="openEditAsset(${a.id})">✎</button><button class="btn btn-d btn-sm" onclick="delAsset(${a.id})">✕</button></div></div>`).join('');}
   const now=new Date();
   const closedO=D.opts.filter(o=>o.status==='Closed'&&new Date(o.date).getMonth()===now.getMonth());
   const oInc=closedO.reduce((s,o)=>s+(o.pnl||0),0);
@@ -1092,11 +1221,11 @@ function renderBudget(){
   mkC('chartBudgetPie',{type:'doughnut',data:{labels:Object.keys(catTots),datasets:[{data:Object.values(catTots),backgroundColor:COLORS,borderWidth:1,borderColor:'#070b12'}]},options:{responsive:true,maintainAspectRatio:false,cutout:'58%',plugins:{legend:{position:'right',labels:{color:'#94a3b8',font:{family:'Space Mono',size:8},boxWidth:8}}}}});
   // Income table
   const it=document.getElementById('income-tbody');
-  if(!mIncome.length){it.innerHTML='<tr><td colspan="6"><div class="empty"><div class="empty-i">💵</div>No income logged for this month</div></td></tr>';}
-  else{it.innerHTML=[...mIncome].sort((a,b)=>b.date.localeCompare(a.date)).map(i=>`<tr><td>${i.date}</td><td>${i.src||'-'}</td><td><span class="badge ${i.cat==='Salary'?'bg':i.cat.includes('Bond')?'bb':i.cat.includes('Options')?'bpu':'bgold'}">${i.cat}</span></td><td class="num pos">+${fI(i.amt)}</td><td style="font-size:10px;color:var(--text3)">${i.notes||'-'}</td><td><button class="btn btn-d btn-sm" onclick="delIncome(${i.id})">✕</button></td></tr>`).join('');}
+  if(!mIncome.length){it.innerHTML='<tr><td colspan="7"><div class="empty"><div class="empty-i">💵</div>No income logged for this month</div></td></tr>';}
+  else{it.innerHTML=[...mIncome].sort((a,b)=>b.date.localeCompare(a.date)).map(i=>`<tr><td>${i.date}</td><td>${i.src||'-'}</td><td><span class="badge ${i.cat==='Salary'?'bg':i.cat.includes('Bond')?'bb':i.cat.includes('Options')?'bpu':'bgold'}">${i.cat}</span></td><td class="num pos">+${fI(i.amt)}</td><td style="font-size:10px;color:var(--text3)">${i.notes||'-'}</td><td><button class="btn btn-o btn-sm" onclick="openEditIncome(${i.id})">✎</button></td><td><button class="btn btn-d btn-sm" onclick="delIncome(${i.id})">✕</button></td></tr>`).join('');}
   const et=document.getElementById('expense-tbody');
-  if(!mExpense.length){et.innerHTML='<tr><td colspan="5"><div class="empty"><div class="empty-i">💸</div>No expenses logged</div></td></tr>';}
-  else{et.innerHTML=[...mExpense].sort((a,b)=>b.date.localeCompare(a.date)).map(e=>`<tr><td>${e.date}</td><td><span class="badge br">${e.cat}</span></td><td style="font-size:10px">${e.desc||'-'}</td><td class="num neg">${fI(e.amt)}</td><td><button class="btn btn-d btn-sm" onclick="delExpense(${e.id})">✕</button></td></tr>`).join('');}
+  if(!mExpense.length){et.innerHTML='<tr><td colspan="6"><div class="empty"><div class="empty-i">💸</div>No expenses logged</div></td></tr>';}
+  else{et.innerHTML=[...mExpense].sort((a,b)=>b.date.localeCompare(a.date)).map(e=>`<tr><td>${e.date}</td><td><span class="badge br">${e.cat}</span></td><td style="font-size:10px">${e.desc||'-'}</td><td class="num neg">${fI(e.amt)}</td><td><button class="btn btn-o btn-sm" onclick="openEditExpense(${e.id})">✎</button></td><td><button class="btn btn-d btn-sm" onclick="delExpense(${e.id})">✕</button></td></tr>`).join('');}
   // Budget cats
   const bc=document.getElementById('budget-cats');
   const rows=EXP_CATS.map(cat=>{
@@ -1276,7 +1405,6 @@ function addSIP(){
   save('sips');closeModal('mo-add-sip');renderSIP();buildTicker();
 }
 function delSIP(id){if(!confirm('Delete SIP?'))return;D.sips=D.sips.filter(s=>s.id!==id);save('sips');renderSIP();buildTicker();}
-function editSIPNav(id){const s=D.sips.find(x=>x.id===id);if(!s)return;const v=prompt('Update NAV/Price for '+s.name+':',s.nav);if(v!==null&&!isNaN(v)){s.nav=parseFloat(v);save('sips');renderSIP();buildTicker();}}
 function addSIPHist(){
   const sid=parseInt(document.getElementById('sih-sip').value);
   const si=D.sips.find(s=>s.id===sid);if(!si)return;
@@ -1297,7 +1425,7 @@ function renderSIP(){
   mkC('chartSIPBar',{type:'bar',data:{labels:D.sips.map(s=>s.name.substring(0,8)),datasets:[{label:'Monthly SIP',data:D.sips.map(s=>s.amount),backgroundColor:'rgba(245,197,66,.7)',borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:darkX}});
   const cards=document.getElementById('sip-cards');
   if(!D.sips.length){cards.innerHTML='<div class="empty"><div class="empty-i">💰</div>Add your SIPs: NiftyBees, GoldBees, PPFCF, Nippon Small Cap</div>';return;}
-  cards.innerHTML=D.sips.map(s=>{const cur=s.units*s.nav,pnl=cur-s.invested,p=s.invested?pnl/s.invested*100:0;return `<div class="sip-card"><div style="display:flex;justify-content:space-between;align-items:flex-start"><div><div style="font-size:13px;font-weight:600;color:var(--text)">${s.name}</div><div style="font-family:'Space Mono',monospace;font-size:9px;color:var(--text3);margin-top:2px">${s.type} · ${s.platform} · ${s.freq} · Day ${s.sipDay}</div></div><div style="display:flex;gap:5px"><button class="btn btn-o btn-sm" onclick="editSIPNav(${s.id})">✎ NAV</button><button class="btn btn-d btn-sm" onclick="delSIP(${s.id})">✕</button></div></div><div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:9px 0"><div><div style="font-size:8px;color:var(--text3);font-family:'Space Mono',monospace;text-transform:uppercase;margin-bottom:2px">Monthly</div><div style="font-size:12px;font-weight:700;color:var(--gold)">${fI(s.amount)}</div></div><div><div style="font-size:8px;color:var(--text3);font-family:'Space Mono',monospace;text-transform:uppercase;margin-bottom:2px">Invested</div><div style="font-size:12px;font-weight:700">${fI(s.invested)}</div></div><div><div style="font-size:8px;color:var(--text3);font-family:'Space Mono',monospace;text-transform:uppercase;margin-bottom:2px">Current</div><div style="font-size:12px;font-weight:700;color:var(--green)">${fI(cur)}</div></div><div><div style="font-size:8px;color:var(--text3);font-family:'Space Mono',monospace;text-transform:uppercase;margin-bottom:2px">Returns</div><div style="font-size:12px;font-weight:700;color:${pnl>=0?'var(--green)':'var(--red)'}">${pS(pnl)}${fI(Math.abs(pnl))}</div></div></div><div class="pbar"><div class="pfill ${pnl<0?'r':''}" style="width:${Math.min(Math.max(p+30,0),100)}%"></div></div></div>`;}).join('');
+  cards.innerHTML=D.sips.map(s=>{const cur=s.units*s.nav,pnl=cur-s.invested,p=s.invested?pnl/s.invested*100:0;return `<div class="sip-card"><div style="display:flex;justify-content:space-between;align-items:flex-start"><div><div style="font-size:13px;font-weight:600;color:var(--text)">${s.name}</div><div style="font-family:'Space Mono',monospace;font-size:9px;color:var(--text3);margin-top:2px">${s.type} · ${s.platform} · ${s.freq} · Day ${s.sipDay}</div></div><div style="display:flex;gap:5px"><button class="btn btn-o btn-sm" onclick="openEditSIP(${s.id})">✎ Edit</button><button class="btn btn-d btn-sm" onclick="delSIP(${s.id})">✕</button></div></div><div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:9px 0"><div><div style="font-size:8px;color:var(--text3);font-family:'Space Mono',monospace;text-transform:uppercase;margin-bottom:2px">Monthly</div><div style="font-size:12px;font-weight:700;color:var(--gold)">${fI(s.amount)}</div></div><div><div style="font-size:8px;color:var(--text3);font-family:'Space Mono',monospace;text-transform:uppercase;margin-bottom:2px">Invested</div><div style="font-size:12px;font-weight:700">${fI(s.invested)}</div></div><div><div style="font-size:8px;color:var(--text3);font-family:'Space Mono',monospace;text-transform:uppercase;margin-bottom:2px">Current</div><div style="font-size:12px;font-weight:700;color:var(--green)">${fI(cur)}</div></div><div><div style="font-size:8px;color:var(--text3);font-family:'Space Mono',monospace;text-transform:uppercase;margin-bottom:2px">Returns</div><div style="font-size:12px;font-weight:700;color:${pnl>=0?'var(--green)':'var(--red)'}">${pS(pnl)}${fI(Math.abs(pnl))}</div></div></div><div class="pbar"><div class="pfill ${pnl<0?'r':''}" style="width:${Math.min(Math.max(p+30,0),100)}%"></div></div></div>`;}).join('');
 }
 
 // ===== TRADES =====
@@ -1320,8 +1448,8 @@ function clearFilter(){filtTrades=null;renderTrades();}
 function renderTrades(){
   const list=filtTrades||D.trades;
   const tb=document.getElementById('tl-tbody');
-  if(!list.length){tb.innerHTML='<tr><td colspan="13"><div class="empty"><div class="empty-i">📋</div>No trades. Log equity, futures, swing, options here.</div></td></tr>';}
-  else{tb.innerHTML=[...list].sort((a,b)=>b.date.localeCompare(a.date)).map(t=>`<tr><td>${t.date}</td><td><span class="badge ${t.market==='Global'?'bb':'bg'}">${t.market}</span></td><td><span class="badge ${t.cat==='Futures'?'bor':t.cat==='Swing'?'bteal':t.cat==='Options'?'bpu':'bg'}">${t.cat}</span></td><td class="sym">${t.sym}</td><td><span class="badge ${t.type==='BUY'?'bg':'br'}">${t.type}</span></td><td class="num">${t.qty}${t.lot>1?'×'+t.lot:''}</td><td class="num">${t.currency!=='INR'?(CURSYM[t.currency]||''):'₹'}${t.price.toFixed(2)}</td><td class="num">${fI(t.amtI||t.amount)}</td><td class="num neg">${fI(t.fee)}</td><td class="num ${t.type==='BUY'?'neg':'pos'}">${fI(Math.abs(t.net))}</td><td style="font-size:9px;color:var(--text3)">${t.expiry||'-'}</td><td style="font-size:10px;color:var(--text3);max-width:80px;overflow:hidden;text-overflow:ellipsis">${t.notes||''}</td><td><button class="btn btn-d btn-sm" onclick="delTrade(${t.id})">✕</button></td></tr>`).join('');}
+  if(!list.length){tb.innerHTML='<tr><td colspan="14"><div class="empty"><div class="empty-i">📋</div>No trades. Log equity, futures, swing, options here.</div></td></tr>';}
+  else{tb.innerHTML=[...list].sort((a,b)=>b.date.localeCompare(a.date)).map(t=>`<tr><td>${t.date}</td><td><span class="badge ${t.market==='Global'?'bb':'bg'}">${t.market}</span></td><td><span class="badge ${t.cat==='Futures'?'bor':t.cat==='Swing'?'bteal':t.cat==='Options'?'bpu':'bg'}">${t.cat}</span></td><td class="sym">${t.sym}</td><td><span class="badge ${t.type==='BUY'?'bg':'br'}">${t.type}</span></td><td class="num">${t.qty}${t.lot>1?'×'+t.lot:''}</td><td class="num">${t.currency!=='INR'?(CURSYM[t.currency]||''):'₹'}${t.price.toFixed(2)}</td><td class="num">${fI(t.amtI||t.amount)}</td><td class="num neg">${fI(t.fee)}</td><td class="num ${t.type==='BUY'?'neg':'pos'}">${fI(Math.abs(t.net))}</td><td style="font-size:9px;color:var(--text3)">${t.expiry||'-'}</td><td style="font-size:10px;color:var(--text3);max-width:80px;overflow:hidden;text-overflow:ellipsis">${t.notes||''}</td><td><button class="btn btn-o btn-sm" onclick="openEditTrade(${t.id})">✎</button></td><td><button class="btn btn-d btn-sm" onclick="delTrade(${t.id})">✕</button></td></tr>`).join('');}
   const bV=list.filter(t=>t.type==='BUY').reduce((s,t)=>s+(t.amtI||t.amount),0);
   const sV=list.filter(t=>t.type==='SELL').reduce((s,t)=>s+(t.amtI||t.amount),0);
   setEl('tl-total',list.length);setEl('tl-buy',fI(bV));setEl('tl-sell',fI(sV));setEl('tl-fees',fI(list.reduce((s,t)=>s+t.fee,0)));
@@ -1363,7 +1491,7 @@ function renderOpts(){
   setEl('op-open',D.opts.filter(o=>o.status==='Open').length);
   const tb=document.getElementById('op-tbody');
   if(!D.opts.length){tb.innerHTML='<tr><td colspan="18"><div class="empty"><div class="empty-i">⚡</div>No options positions</div></td></tr>';}
-  else{tb.innerHTML=[...D.opts].sort((a,b)=>b.date.localeCompare(a.date)).map(o=>`<tr><td>${o.date}</td><td class="sym">${o.instr}</td><td><span class="badge bpu">${o.strategy}</span></td><td>${o.expiry}</td><td class="num pos">${o.ceStrike||'-'}</td><td class="num">${o.ceEn||'-'}</td><td class="num">${o.ceEx||'-'}</td><td class="num neg">${o.peStrike||'-'}</td><td class="num">${o.peEn||'-'}</td><td class="num">${o.peEx||'-'}</td><td class="num">${o.lots}</td><td class="num neg">${fI(o.fee)}</td><td class="num neg">${o.maxLoss?fI(o.maxLoss):'-'}</td><td class="num pos">${o.target?fI(o.target):'-'}</td><td class="num ${o.pnl!=null?pC(o.pnl):''}">${o.pnl!=null?pS(o.pnl)+fI(Math.abs(o.pnl)):'Open'}</td><td><span class="badge ${o.status==='Closed'?'bg':o.status==='Adjusted'?'bgold':'bb'}">${o.status}</span></td><td>${o.status==='Open'?`<button class="btn btn-s btn-sm" onclick="closeOpt(${o.id})">Close</button>`:''}</td><td><button class="btn btn-d btn-sm" onclick="delOpt(${o.id})">✕</button></td></tr>`).join('');}
+  else{tb.innerHTML=[...D.opts].sort((a,b)=>b.date.localeCompare(a.date)).map(o=>`<tr><td>${o.date}</td><td class="sym">${o.instr}</td><td><span class="badge bpu">${o.strategy}</span></td><td>${o.expiry}</td><td class="num pos">${o.ceStrike||'-'}</td><td class="num">${o.ceEn||'-'}</td><td class="num">${o.ceEx||'-'}</td><td class="num neg">${o.peStrike||'-'}</td><td class="num">${o.peEn||'-'}</td><td class="num">${o.peEx||'-'}</td><td class="num">${o.lots}</td><td class="num neg">${fI(o.fee)}</td><td class="num neg">${o.maxLoss?fI(o.maxLoss):'-'}</td><td class="num pos">${o.target?fI(o.target):'-'}</td><td class="num ${o.pnl!=null?pC(o.pnl):''}">${o.pnl!=null?pS(o.pnl)+fI(Math.abs(o.pnl)):'Open'}</td><td><span class="badge ${o.status==='Closed'?'bg':o.status==='Adjusted'?'bgold':'bb'}">${o.status}</span></td><td><button class="btn btn-o btn-sm" onclick="openEditOpt(${o.id})">✎</button>${o.status==='Open'?` <button class="btn btn-s btn-sm" onclick="closeOpt(${o.id})">Close</button>`:''}</td><td><button class="btn btn-d btn-sm" onclick="delOpt(${o.id})">✕</button></td></tr>`).join('');}
   const mos=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],mP=new Array(12).fill(0);
   closed.forEach(o=>mP[new Date(o.date).getMonth()]+=(o.pnl||0));
   mkC('chartOptMo',{type:'bar',data:{labels:mos,datasets:[{label:'P&L',data:mP,backgroundColor:mP.map(v=>v>=0?'rgba(0,229,160,.7)':'rgba(255,77,106,.7)'),borderRadius:3}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:darkX}});
@@ -1371,6 +1499,33 @@ function renderOpts(){
   mkC('chartOptStrat',{type:'doughnut',data:{labels:Object.keys(sD),datasets:[{data:Object.values(sD),backgroundColor:COLORS,borderWidth:1,borderColor:'#070b12'}]},options:{responsive:true,maintainAspectRatio:false,cutout:'60%',plugins:{legend:{position:'right',labels:{color:'#94a3b8',font:{family:'Space Mono',size:8},boxWidth:8}}}}});
 }
 function exportOpts(){const h='Date,Instrument,Strategy,Expiry,CE Strike,CE In,CE Out,PE Strike,PE In,PE Out,Lots,Fee,Max Loss,Target,P&L,Status';const r=D.opts.map(o=>`${o.date},${o.instr},${o.strategy},${o.expiry},${o.ceStrike||''},${o.ceEn||''},${o.ceEx||''},${o.peStrike||''},${o.peEn||''},${o.peEx||''},${o.lots},${o.fee},${o.maxLoss||''},${o.target||''},${o.pnl!=null?o.pnl:'Open'},${o.status}`);dl('options.csv',[h,...r].join('\n'));}
+
+// ===== EDIT FUNCTIONS =====
+// Budget
+function openEditIncome(id){const i=D.income.find(x=>x.id===id);if(!i)return;document.getElementById('ei-id').value=id;document.getElementById('ei-date').value=i.date;document.getElementById('ei-cat').value=i.cat;document.getElementById('ei-src').value=i.src||'';document.getElementById('ei-amt').value=i.amt;document.getElementById('ei-notes').value=i.notes||'';openModal('mo-edit-income');}
+function saveEditIncome(){const id=parseInt(document.getElementById('ei-id').value);const i=D.income.find(x=>x.id===id);if(!i)return;i.date=document.getElementById('ei-date').value;i.cat=document.getElementById('ei-cat').value;i.src=document.getElementById('ei-src').value;i.amt=parseFloat(document.getElementById('ei-amt').value)||i.amt;i.notes=document.getElementById('ei-notes').value;save('income');closeModal('mo-edit-income');renderBudget();toast('✓ Income updated','ok');}
+function openEditExpense(id){const e=D.expenses.find(x=>x.id===id);if(!e)return;document.getElementById('ee-id').value=id;document.getElementById('ee-date').value=e.date;document.getElementById('ee-cat').value=e.cat;document.getElementById('ee-desc').value=e.desc||'';document.getElementById('ee-amt').value=e.amt;openModal('mo-edit-expense');}
+function saveEditExpense(){const id=parseInt(document.getElementById('ee-id').value);const e=D.expenses.find(x=>x.id===id);if(!e)return;e.date=document.getElementById('ee-date').value;e.cat=document.getElementById('ee-cat').value;e.desc=document.getElementById('ee-desc').value;e.amt=parseFloat(document.getElementById('ee-amt').value)||e.amt;save('expenses');closeModal('mo-edit-expense');renderBudget();toast('✓ Expense updated','ok');}
+// SIP
+function openEditSIP(id){const s=D.sips.find(x=>x.id===id);if(!s)return;document.getElementById('es-id').value=id;document.getElementById('es-name').value=s.name;document.getElementById('es-amt').value=s.amount;document.getElementById('es-invested').value=s.invested;document.getElementById('es-units').value=s.units;document.getElementById('es-nav').value=s.nav;document.getElementById('es-amfi').value=s.amfiCode||'';document.getElementById('es-yahoo').value=s.yahooSym||'';document.getElementById('edit-sip-title').textContent='Edit — '+s.name.substring(0,20);openModal('mo-edit-sip');}
+function saveEditSIP(){const id=parseInt(document.getElementById('es-id').value);const s=D.sips.find(x=>x.id===id);if(!s)return;s.name=document.getElementById('es-name').value||s.name;s.amount=parseFloat(document.getElementById('es-amt').value)||s.amount;s.invested=parseFloat(document.getElementById('es-invested').value)||s.invested;s.units=parseFloat(document.getElementById('es-units').value)||s.units;s.nav=parseFloat(document.getElementById('es-nav').value)||s.nav;s.amfiCode=document.getElementById('es-amfi').value.trim();s.yahooSym=document.getElementById('es-yahoo').value.trim();save('sips');closeModal('mo-edit-sip');renderSIP();buildTicker();toast('✓ SIP updated','ok');}
+// Trade
+function openEditTrade(id){const t=D.trades.find(x=>x.id===id);if(!t)return;document.getElementById('et-id').value=id;document.getElementById('et-date').value=t.date;document.getElementById('et-sym').value=t.sym;document.getElementById('et-price').value=t.price;document.getElementById('et-qty').value=t.qty;document.getElementById('et-fee').value=t.fee;document.getElementById('et-notes').value=t.notes||'';openModal('mo-edit-trade');}
+function saveEditTrade(){const id=parseInt(document.getElementById('et-id').value);const t=D.trades.find(x=>x.id===id);if(!t)return;t.date=document.getElementById('et-date').value;t.sym=document.getElementById('et-sym').value.toUpperCase();t.price=parseFloat(document.getElementById('et-price').value)||t.price;t.qty=parseFloat(document.getElementById('et-qty').value)||t.qty;t.fee=parseFloat(document.getElementById('et-fee').value)||0;t.amount=t.qty*(t.lot||1)*t.price;t.amtI=toI(t.amount,t.currency);t.net=t.type==='BUY'?-(t.amount+t.fee):(t.amount-t.fee);t.notes=document.getElementById('et-notes').value;save('trades');closeModal('mo-edit-trade');renderTrades();toast('✓ Trade updated','ok');}
+// Options
+function openEditOpt(id){const o=D.opts.find(x=>x.id===id);if(!o)return;document.getElementById('eo-id').value=id;document.getElementById('eo-ce-exit').value=o.ceEx||'';document.getElementById('eo-ce-strike').value=o.ceStrike||'';document.getElementById('eo-pe-exit').value=o.peEx||'';document.getElementById('eo-pe-strike').value=o.peStrike||'';document.getElementById('eo-status').value=o.status;document.getElementById('eo-notes').value=o.notes||'';openModal('mo-edit-opt');}
+function saveEditOpt(){const id=parseInt(document.getElementById('eo-id').value);const o=D.opts.find(x=>x.id===id);if(!o)return;o.ceEx=parseFloat(document.getElementById('eo-ce-exit').value)||o.ceEx;o.peEx=parseFloat(document.getElementById('eo-pe-exit').value)||o.peEx;o.status=document.getElementById('eo-status').value;o.notes=document.getElementById('eo-notes').value;if(o.status==='Closed'){let pnl=0;if(o.ceA==='SELL')pnl+=(o.ceEn-o.ceEx)*o.lots*o.ls;else if(o.ceA==='BUY')pnl+=(o.ceEx-o.ceEn)*o.lots*o.ls;if(o.peA==='SELL')pnl+=(o.peEn-o.peEx)*o.lots*o.ls;else if(o.peA==='BUY')pnl+=(o.peEx-o.peEn)*o.lots*o.ls;o.pnl=pnl-o.fee;}save('opts');closeModal('mo-edit-opt');renderOpts();toast('✓ Position updated','ok');}
+// Loan
+function openEditLoan(id){const l=D.loans.find(x=>x.id===id);if(!l)return;document.getElementById('el-id').value=id;document.getElementById('el-name').value=l.name;document.getElementById('el-type').value=l.type;document.getElementById('el-principal').value=l.principal;document.getElementById('el-rate').value=l.rate;document.getElementById('el-emi').value=l.emi||0;document.getElementById('el-purpose').value=l.purpose||'';openModal('mo-edit-loan');}
+function saveEditLoan(){const id=parseInt(document.getElementById('el-id').value);const l=D.loans.find(x=>x.id===id);if(!l)return;l.name=document.getElementById('el-name').value||l.name;l.type=document.getElementById('el-type').value;l.principal=parseFloat(document.getElementById('el-principal').value)||l.principal;l.rate=parseFloat(document.getElementById('el-rate').value)||l.rate;l.emi=parseFloat(document.getElementById('el-emi').value)||0;l.purpose=document.getElementById('el-purpose').value;save('loans');closeModal('mo-edit-loan');renderLiabilities();toast('✓ Loan updated','ok');}
+// Asset
+function openEditAsset(id){const a=D.assets.find(x=>x.id===id);if(!a)return;document.getElementById('ea-id').value=id;document.getElementById('ea-name').value=a.name;document.getElementById('ea-cat').value=a.cat;document.getElementById('ea-val').value=a.val;document.getElementById('ea-inv').value=a.inv||0;document.getElementById('ea-ret').value=a.ret||0;document.getElementById('ea-liq').value=a.liq;document.getElementById('ea-notes').value=a.notes||'';openModal('mo-edit-asset');}
+function saveEditAsset(){const id=parseInt(document.getElementById('ea-id').value);const a=D.assets.find(x=>x.id===id);if(!a)return;a.name=document.getElementById('ea-name').value||a.name;a.cat=document.getElementById('ea-cat').value;a.val=parseFloat(document.getElementById('ea-val').value)||a.val;a.inv=parseFloat(document.getElementById('ea-inv').value)||0;a.ret=parseFloat(document.getElementById('ea-ret').value)||0;a.liq=document.getElementById('ea-liq').value;a.notes=document.getElementById('ea-notes').value;save('assets');closeModal('mo-edit-asset');renderNetWorth();toast('✓ Asset updated','ok');}
+// Journal
+function openEditJournal(id){const j=D.journals.find(x=>x.id===id);if(!j)return;document.getElementById('ej-id').value=id;document.getElementById('ej-title').value=j.title;document.getElementById('ej-entry').value=j.entry||'';document.getElementById('ej-exit').value=j.exit||'';document.getElementById('ej-lesson').value=j.lesson||'';document.getElementById('ej-conv').value=j.conviction||3;document.getElementById('ej-pnl').value=j.pnl||'';document.getElementById('ej-tags').value=(j.tags||[]).join(', ');openModal('mo-edit-journal');}
+function saveEditJournal(){const id=parseInt(document.getElementById('ej-id').value);const j=D.journals.find(x=>x.id===id);if(!j)return;j.title=document.getElementById('ej-title').value;j.entry=document.getElementById('ej-entry').value;j.exit=document.getElementById('ej-exit').value;j.lesson=document.getElementById('ej-lesson').value;j.conviction=parseInt(document.getElementById('ej-conv').value);j.pnl=document.getElementById('ej-pnl').value?parseFloat(document.getElementById('ej-pnl').value):null;j.tags=document.getElementById('ej-tags').value.split(',').map(t=>t.trim()).filter(Boolean);save('journals');closeModal('mo-edit-journal');renderJournal();toast('✓ Journal updated','ok');}
+// India export
+function exportIndiaCSV(){const h='Symbol,Type,Sector,Broker,Qty,Avg Price,CMP,Broker Fee,Date,Pledged,Notes,Yahoo Symbol';const r=D.india.map(h=>`${h.sym},${h.type},${h.sector},${h.broker},${h.qty},${h.avg.toFixed(2)},${h.cmp.toFixed(2)},${h.charges||0},${h.date},${h.pledged||'No'},"${h.notes||''}",${h.yahooSym||''}`);dl('india-holdings.csv',[h,...r].join('\n'));}
 
 // ===== LIABILITIES =====
 function addLoan(){
@@ -1435,7 +1590,8 @@ function renderLiabilities(){
         <div><div class="loan-name">${l.name} ${l.status==='Closed'?'<span class="badge bg">✓ Closed</span>':''}</div><div class="loan-meta">${l.type} · ${l.rate}% PA · Started ${l.startDate}${l.purpose?' · '+l.purpose:''}</div></div>
         <div style="display:flex;gap:5px">
           <button class="btn btn-s btn-sm" onclick="openLoanDetail(${l.id})">Detail / Repay</button>
-          ${l.status!=='Closed'?`<button class="btn btn-o btn-sm" onclick="closeLoan(${l.id})">✓ Close</button>`:''}
+          <button class="btn btn-o btn-sm" onclick="openEditLoan(${l.id})">✎ Edit</button>
+          ${l.status!=='Closed'?`<button class="btn btn-s btn-sm" onclick="closeLoan(${l.id})">✓ Close</button>`:''}
           <button class="btn btn-d btn-sm" onclick="delLoan(${l.id})">✕</button>
         </div>
       </div>
@@ -1461,14 +1617,6 @@ function delAsset(id){
   D.assets=D.assets.filter(a=>a.id!==id);
   save('assets');renderNetWorth();toast('✓ Asset deleted','ok');
 }
-function editAsset(id){
-  const a=D.assets.find(x=>x.id===id);if(!a)return;
-  const newVal=prompt('Update value for "'+a.name+'" (₹):',a.val);
-  if(newVal===null)return;
-  if(isNaN(newVal)||newVal===''){alert('Enter a valid number');return;}
-  a.val=parseFloat(newVal);
-  save('assets');renderNetWorth();toast('✓ '+a.name+' updated','ok');
-}
 
 // ===== JOURNAL =====
 function addJournal(){
@@ -1483,8 +1631,10 @@ function renderJournal(){
   setEl('j-conv',D.journals.length?(D.journals.reduce((s,j)=>s+j.conviction,0)/D.journals.length).toFixed(1)+'⭐':'-');
   setEl('j-lessons',D.journals.filter(j=>j.lesson&&j.lesson.trim()).length);
   const list=document.getElementById('j-list');
-  if(!D.journals.length){list.innerHTML='<div class="empty"><div class="empty-i">📓</div>Start journaling. The edge is in the review.</div>';return;}
-  list.innerHTML=[...D.journals].sort((a,b)=>b.date.localeCompare(a.date)).map(j=>`<div class="je"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px"><div><div class="jd">${j.date} · ${j.mkt}</div><div class="jt">${j.title}</div></div><div style="display:flex;align-items:center;gap:6px">${j.pnl!=null?`<span class="badge ${j.pnl>=0?'bg':'br'}">${j.pnl>=0?'+':''}₹${Math.abs(j.pnl).toLocaleString()}</span>`:''}<span style="color:var(--gold);font-size:12px">${'⭐'.repeat(j.conviction)}</span><button class="btn btn-d btn-sm" onclick="delJournal(${j.id})">✕</button></div></div>${j.entry?`<div style="margin-bottom:4px"><div style="font-family:'Space Mono',monospace;font-size:8px;color:var(--text3);text-transform:uppercase">Setup</div><div class="jb">${j.entry}</div></div>`:''} ${j.exit?`<div style="margin-bottom:4px"><div style="font-family:'Space Mono',monospace;font-size:8px;color:var(--text3);text-transform:uppercase">Outcome</div><div class="jb">${j.exit}</div></div>`:''} ${j.lesson?`<div style="margin-bottom:4px"><div style="font-family:'Space Mono',monospace;font-size:8px;color:var(--gold);text-transform:uppercase">💡 Lesson</div><div class="jb" style="color:var(--gold)">${j.lesson}</div></div>`:''} ${j.tags.length?`<div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:5px">${j.tags.map(t=>`<span class="badge bpu">#${t}</span>`).join('')}</div>`:''}</div>`).join('');
+  const q=(document.getElementById('j-search')?.value||'').toLowerCase();
+  const filtered=q?D.journals.filter(j=>(j.title||'').toLowerCase().includes(q)||(j.entry||'').toLowerCase().includes(q)||((j.tags||[]).join(' ')).toLowerCase().includes(q)):D.journals;
+  if(!filtered.length){list.innerHTML='<div class="empty"><div class="empty-i">📓</div>'+(q?'No entries match your search.':'Start journaling. The edge is in the review.')+'</div>';return;}
+  list.innerHTML=[...filtered].sort((a,b)=>b.date.localeCompare(a.date)).map(j=>`<div class="je"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px"><div><div class="jd">${j.date} · ${j.mkt}</div><div class="jt">${j.title}</div></div><div style="display:flex;align-items:center;gap:6px">${j.pnl!=null?`<span class="badge ${j.pnl>=0?'bg':'br'}">${j.pnl>=0?'+':''}₹${Math.abs(j.pnl).toLocaleString()}</span>`:''}<span style="color:var(--gold);font-size:12px">${'⭐'.repeat(j.conviction)}</span><button class="btn btn-o btn-sm" onclick="openEditJournal(${j.id})">✎</button><button class="btn btn-d btn-sm" onclick="delJournal(${j.id})">✕</button></div></div>${j.entry?`<div style="margin-bottom:4px"><div style="font-family:'Space Mono',monospace;font-size:8px;color:var(--text3);text-transform:uppercase">Setup</div><div class="jb">${j.entry}</div></div>`:''} ${j.exit?`<div style="margin-bottom:4px"><div style="font-family:'Space Mono',monospace;font-size:8px;color:var(--text3);text-transform:uppercase">Outcome</div><div class="jb">${j.exit}</div></div>`:''} ${j.lesson?`<div style="margin-bottom:4px"><div style="font-family:'Space Mono',monospace;font-size:8px;color:var(--gold);text-transform:uppercase">💡 Lesson</div><div class="jb" style="color:var(--gold)">${j.lesson}</div></div>`:''} ${(j.tags||[]).length?`<div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:5px">${j.tags.map(t=>`<span class="badge bpu">#${t}</span>`).join('')}</div>`:''}</div>`).join('');
 }
 
 // ===== SYNC =====
