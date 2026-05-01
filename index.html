@@ -1501,23 +1501,36 @@ function updateSyncInfo(){
 
 // ===== UTILS =====
 // ===== LIVE PRICE REFRESH =====
-const YAHOO_PROXY='https://query1.finance.yahoo.com/v7/finance/quote?symbols=';
 async function refreshPrices(){
   const btn=document.querySelector('[onclick="refreshPrices()"]');
   if(btn){btn.textContent='⟳ Fetching...';btn.disabled=true;}
   let updated=0,failed=[];
-  const yahooSyms=[...D.india.filter(h=>h.yahooSym).map(h=>h.yahooSym),...D.global.filter(h=>h.yahooSym).map(h=>h.yahooSym),...D.sips.filter(s=>s.yahooSym&&!s.amfiCode).map(s=>s.yahooSym)];
-  if(yahooSyms.length){
+
+  // Collect all Yahoo symbols
+  const indiaSyms=D.india.filter(h=>h.yahooSym).map(h=>({obj:h,sym:h.yahooSym,type:'india'}));
+  const globalSyms=D.global.filter(h=>h.yahooSym).map(h=>({obj:h,sym:h.yahooSym,type:'global'}));
+  const sipSyms=D.sips.filter(s=>s.yahooSym&&!s.amfiCode).map(s=>({obj:s,sym:s.yahooSym,type:'sip'}));
+  const allYahoo=[...indiaSyms,...globalSyms,...sipSyms];
+
+  // Fetch each symbol individually using Yahoo Finance v8 (CORS-friendly)
+  for(const item of allYahoo){
     try{
-      const r=await fetch(YAHOO_PROXY+encodeURIComponent(yahooSyms.join(',')));
+      const url=`https://query2.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(item.sym)}?interval=1d&range=1d`;
+      const r=await fetch(url,{headers:{'Accept':'application/json'}});
+      if(!r.ok)throw new Error(r.status);
       const d=await r.json();
-      const pm={};(d.quoteResponse?.result||[]).forEach(q=>pm[q.symbol]=q.regularMarketPrice);
-      D.india.forEach(h=>{if(h.yahooSym&&pm[h.yahooSym]!=null){h.cmp=pm[h.yahooSym];updated++;}});
-      D.global.forEach(h=>{if(h.yahooSym&&pm[h.yahooSym]!=null){h.cmp=pm[h.yahooSym];updated++;}});
-      D.sips.forEach(s=>{if(s.yahooSym&&!s.amfiCode&&pm[s.yahooSym]!=null){s.nav=pm[s.yahooSym];updated++;}});
-      save('india');save('global');save('sips');
-    }catch(e){failed.push('Yahoo Finance');}
+      const price=d?.chart?.result?.[0]?.meta?.regularMarketPrice;
+      if(price){
+        if(item.type==='india'||item.type==='global')item.obj.cmp=price;
+        else item.obj.nav=price;
+        updated++;
+      }else{failed.push(item.sym);}
+    }catch(e){failed.push(item.sym);}
   }
+
+  if(allYahoo.length){save('india');save('global');save('sips');}
+
+  // MF NAV from AMFI
   for(const s of D.sips.filter(s=>s.amfiCode)){
     try{
       const r=await fetch('https://api.mfapi.in/mf/'+s.amfiCode+'/latest');
@@ -1525,16 +1538,20 @@ async function refreshPrices(){
       if(d.data&&d.data[0]){s.nav=parseFloat(d.data[0].nav);updated++;}
     }catch(e){failed.push(s.name);}
   }
-  save('sips');
+  if(D.sips.filter(s=>s.amfiCode).length)save('sips');
+
   buildTicker();
   const at=document.querySelector('.sec.active')?.id?.replace('tab-','');
   if(at&&tabMap[at])tabMap[at]();
   renderNetWorth();
   if(btn){btn.textContent='⟳ Live Prices';btn.disabled=false;}
-  if(!yahooSyms.length&&!D.sips.filter(s=>s.amfiCode).length){
-    alert('No Yahoo symbols or AMFI codes set yet.\n\nWhen adding a holding, fill the Yahoo Symbol:\n• India stocks: INFY.NS  WIPRO.NS  TCS.NS\n• India ETF:    NIFTYBEES.NS  GOLDBEES.NS\n• US stocks:    NVDA  MSFT  GOOGL  META\n• Japan:        7203.T (Toyota)\n• Korea:        005930.KS (Samsung)\n• Taiwan:       TSM\n\nFor Mutual Funds: fill AMFI Scheme Code\nFind codes at api.mfapi.in/mf (search your fund name)');
-  } else {
-    alert('✓ Updated '+updated+' price(s)'+(failed.length?'\n⚠ Failed: '+failed.join(', '):''));
+
+  if(!allYahoo.length&&!D.sips.filter(s=>s.amfiCode).length){
+    alert('No Yahoo symbols set yet.\n\nEdit any holding and add Yahoo Symbol:\n• NSE stocks: INFY.NS  WIPRO.NS  TCS.NS\n• US stocks:  NVDA  MSFT  GOOGL\n• Japan:      7203.T\n• Korea:      005930.KS\n\nFor MF: add AMFI code in SIP tab');
+  }else if(updated===0&&failed.length){
+    alert('⚠ All fetches failed. Possible reasons:\n1. Yahoo symbols wrong (use INFY.NS not INFY for NSE)\n2. Internet issue\n3. Yahoo rate limit — try again in 1 min\n\nFailed: '+failed.slice(0,5).join(', '));
+  }else{
+    toast('✓ Updated '+updated+' price(s)'+(failed.length?' · '+failed.length+' failed':''),'ok');
   }
 }
 
