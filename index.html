@@ -277,7 +277,7 @@ textarea{resize:vertical;min-height:60px}
   <div class="card" style="margin-bottom:12px">
     <div class="ctitle">Holdings — FX auto-updated from live rates</div>
     <div class="twrap"><table>
-      <thead><tr><th>Ticker</th><th>Company</th><th>Country</th><th>Ccy</th><th>Shares</th><th>Avg</th><th>CMP</th><th>Invested</th><th>Value</th><th>P&L</th><th>P&L%</th><th>INR Value</th><th>Platform</th><th>Edit</th><th>Del</th></tr></thead>
+      <thead><tr><th>Ticker</th><th>Company</th><th>Country</th><th>Ccy</th><th>Shares</th><th>Avg</th><th>CMP</th><th>Invested</th><th>Value</th><th>P&L</th><th>P&L%</th><th>INR Value</th><th>Platform</th><th>Notes</th><th>Edit</th><th>Del</th></tr></thead>
       <tbody id="gl-tbody"></tbody>
     </table></div>
   </div>
@@ -307,7 +307,7 @@ textarea{resize:vertical;min-height:60px}
   </div>
   <div class="card" style="margin-bottom:12px">
     <div class="twrap"><table>
-      <thead><tr><th>Stock</th><th>Type</th><th>Sector</th><th>Qty</th><th>Avg ₹</th><th>CMP ₹</th><th>Invested</th><th>Value</th><th>P&L</th><th>P&L%</th><th>Pledged</th><th>Broker</th><th>Edit</th><th>Del</th></tr></thead>
+      <thead><tr><th>Stock</th><th>Type</th><th>Sector</th><th>Qty</th><th>Avg ₹</th><th>CMP ₹</th><th>Invested</th><th>Value</th><th>P&L</th><th>P&L%</th><th>Pledged</th><th>Broker</th><th>Notes</th><th>Edit</th><th>Del</th></tr></thead>
       <tbody id="in-tbody"></tbody>
     </table></div>
   </div>
@@ -571,6 +571,70 @@ textarea{resize:vertical;min-height:60px}
   <div class="mbox">
     <div class="mhdr"><div class="mtitle" id="loan-detail-title">Loan Detail</div><button class="mclose" onclick="closeModal('mo-loan-detail')">✕</button></div>
     <div id="loan-detail-body"></div>
+  </div>
+</div>
+
+<!-- Edit India Holding -->
+<div class="mo" id="mo-edit-india">
+  <div class="mbox">
+    <div class="mhdr"><div class="mtitle" id="edit-india-title">Edit Holding</div><button class="mclose" onclick="closeModal('mo-edit-india')">✕</button></div>
+    <input type="hidden" id="edit-india-id">
+    <div style="background:rgba(0,229,160,.06);border:1px solid rgba(0,229,160,.15);border-radius:6px;padding:12px;margin-bottom:14px">
+      <div style="font-family:'Space Mono',monospace;font-size:9px;color:var(--green);font-weight:700;letter-spacing:.1em;text-transform:uppercase;margin-bottom:10px">+ ADD MORE SHARES (auto-calculates new average)</div>
+      <div class="fr c3">
+        <div class="fg"><label>New Qty to Add</label><input type="number" id="edit-add-qty" placeholder="10" min="0"></div>
+        <div class="fg"><label>Buy Price (₹)</label><input type="number" id="edit-add-price" placeholder="1450" step="0.01"></div>
+        <div class="fg"><label>Broker Fee (₹)</label><input type="number" id="edit-add-fee" placeholder="20" value="0"></div>
+      </div>
+    </div>
+    <div style="font-family:'Space Mono',monospace;font-size:9px;color:var(--text3);font-weight:700;letter-spacing:.1em;text-transform:uppercase;margin-bottom:10px">UPDATE EXISTING DETAILS</div>
+    <div class="fr c3">
+      <div class="fg"><label>Current Total Qty</label><input type="number" id="edit-qty" placeholder="100"></div>
+      <div class="fg"><label>Avg Price (₹)</label><input type="number" id="edit-avg" placeholder="1500" step="0.01"></div>
+      <div class="fg"><label>CMP (₹)</label><input type="number" id="edit-cmp" placeholder="1650" step="0.01"></div>
+    </div>
+    <div class="fr c2">
+      <div class="fg"><label>Sector</label><select id="edit-sector"><option>IT</option><option>Banking</option><option>Pharma</option><option>FMCG</option><option>Auto</option><option>Metal</option><option>Energy</option><option>Index ETF</option><option>Gold ETF</option><option>Smallcap</option><option>Flexi Cap</option><option>Bond/FD</option><option>Other</option></select></div>
+      <div class="fg"><label>Pledged?</label><select id="edit-pledged"><option>No</option><option>Yes</option></select></div>
+    </div>
+    <div class="fr c2">
+      <div class="fg"><label>Yahoo Symbol</label><input type="text" id="edit-yahoo" placeholder="INFY.NS"></div>
+      <div class="fg"><label>Notes</label><input type="text" id="edit-notes" placeholder="Your notes..."></div>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:6px">
+      <button class="btn btn-s" onclick="closeModal('mo-edit-india')">Cancel</button>
+      <button class="btn btn-p" onclick="saveEditIndia()">Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Global Holding -->
+<div class="mo" id="mo-edit-global">
+  <div class="mbox">
+    <div class="mhdr"><div class="mtitle" id="edit-global-title">Edit Global Holding</div><button class="mclose" onclick="closeModal('mo-edit-global')">✕</button></div>
+    <input type="hidden" id="edit-global-id">
+    <div style="background:rgba(61,158,255,.06);border:1px solid rgba(61,158,255,.15);border-radius:6px;padding:12px;margin-bottom:14px">
+      <div style="font-family:'Space Mono',monospace;font-size:9px;color:var(--blue);font-weight:700;letter-spacing:.1em;text-transform:uppercase;margin-bottom:10px">+ ADD MORE SHARES (auto-calculates new average)</div>
+      <div class="fr c3">
+        <div class="fg"><label>Shares to Add</label><input type="number" id="edit-gl-add-shares" placeholder="0.5" step="0.0001" min="0"></div>
+        <div class="fg"><label>Buy Price</label><input type="number" id="edit-gl-add-price" placeholder="108.40" step="0.01"></div>
+        <div class="fg"><label>Brokerage</label><input type="number" id="edit-gl-add-fee" placeholder="0" value="0" step="0.01"></div>
+      </div>
+    </div>
+    <div style="font-family:'Space Mono',monospace;font-size:9px;color:var(--text3);font-weight:700;letter-spacing:.1em;text-transform:uppercase;margin-bottom:10px">UPDATE DETAILS</div>
+    <div class="fr c3">
+      <div class="fg"><label>Total Shares</label><input type="number" id="edit-gl-shares" placeholder="1.5" step="0.0001"></div>
+      <div class="fg"><label>Avg Price</label><input type="number" id="edit-gl-avg" placeholder="108.40" step="0.01"></div>
+      <div class="fg"><label>CMP</label><input type="number" id="edit-gl-cmp" placeholder="115.00" step="0.01"></div>
+    </div>
+    <div class="fr c2">
+      <div class="fg"><label>Yahoo Symbol</label><input type="text" id="edit-gl-yahoo" placeholder="NVDA · TSM · 7203.T"></div>
+      <div class="fg"><label>Notes</label><input type="text" id="edit-gl-notes" placeholder="Your thesis..."></div>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:6px">
+      <button class="btn btn-s" onclick="closeModal('mo-edit-global')">Cancel</button>
+      <button class="btn btn-p" onclick="saveEditGlobal()">Save Changes</button>
+    </div>
   </div>
 </div>
 
@@ -1084,7 +1148,7 @@ function renderGlobal(){
     const r=toI(1,h.currency),inv=h.shares*h.avg,cur=h.shares*h.cmp,pnl=cur-inv,pct=inv?pnl/inv*100:0;
     iI+=inv*r;iC+=cur*r;
     const cs=CURSYM[h.currency]||'';
-    return `<tr><td class="sym">${h.sym}</td><td style="font-size:10px;color:var(--text2);max-width:80px;overflow:hidden;text-overflow:ellipsis">${h.name||''}</td><td>${CURS[h.currency]||'🌍'} ${h.country}</td><td><span class="badge bb">${h.currency}</span></td><td class="num">${h.shares.toFixed(4)}</td><td class="num">${cs}${h.avg.toFixed(2)}</td><td class="num">${cs}${h.cmp.toFixed(2)}</td><td class="num">${cs}${inv.toFixed(2)}</td><td class="num">${cs}${cur.toFixed(2)}</td><td class="num ${pC(pnl)}">${pS(pnl)}${cs}${Math.abs(pnl).toFixed(2)}</td><td class="num ${pC(pct)}">${fP(pct)}</td><td class="num">${fI(cur*r)}</td><td style="font-size:10px">${h.platform||''}</td><td><button class="btn btn-o btn-sm" onclick="editGlobal(${h.id})">✎</button></td><td><button class="btn btn-d btn-sm" onclick="delGlobal(${h.id})">✕</button></td></tr>`;
+    return `<tr><td class="sym">${h.sym}</td><td style="font-size:10px;color:var(--text2);max-width:80px;overflow:hidden;text-overflow:ellipsis">${h.name||''}</td><td>${CURS[h.currency]||'🌍'} ${h.country}</td><td><span class="badge bb">${h.currency}</span></td><td class="num">${h.shares.toFixed(4)}</td><td class="num">${cs}${h.avg.toFixed(2)}</td><td class="num">${cs}${h.cmp.toFixed(2)}</td><td class="num">${cs}${inv.toFixed(2)}</td><td class="num">${cs}${cur.toFixed(2)}</td><td class="num ${pC(pnl)}">${pS(pnl)}${cs}${Math.abs(pnl).toFixed(2)}</td><td class="num ${pC(pct)}">${fP(pct)}</td><td class="num">${fI(cur*r)}</td><td style="font-size:10px">${h.platform||''}</td><td style="font-size:10px;color:var(--text3);max-width:100px;overflow:hidden;text-overflow:ellipsis" title="${h.notes||''}">${h.notes?'📝 '+h.notes.substring(0,15)+(h.notes.length>15?'...':''):'-'}</td><td><button class="btn btn-o btn-sm" onclick="openEditGlobal(${h.id})">✎ Edit</button></td><td><button class="btn btn-d btn-sm" onclick="delGlobal(${h.id})">✕</button></td></tr>`;
   }).join('');}
   const pnl=iC-iI;
   setEl('gl-inv',fI(iI));setEl('gl-cur',fI(iC));setEl('gl-pnl',pS(pnl)+fI(Math.abs(pnl)));setCls('gl-pnl','mval '+(pnl>=0?'g':'r'));
@@ -1095,10 +1159,79 @@ function renderGlobal(){
   if(!D.wires.length){wt.innerHTML='<tr><td colspan="8"><div class="empty"><div class="empty-i">🔄</div>No wires</div></td></tr>';}
   else{wt.innerHTML=[...D.wires].sort((a,b)=>b.date.localeCompare(a.date)).map(w=>`<tr><td>${w.date}</td><td class="num">${fI(w.inr)}</td><td><span class="badge bb">${w.currency}</span></td><td class="num">${(CURSYM[w.currency]||'')}${w.rcv}</td><td class="num">₹${w.rate}</td><td class="num neg">${fI(w.fee)}</td><td style="font-family:'Space Mono',monospace;font-size:9px;color:var(--text3)">${w.utr||'-'}</td><td><span class="badge ${w.status==='Credited'?'bg':w.status==='Dispatched'?'bgold':'bpu'}">${w.status}</span></td></tr>`).join('');}
 }
-function editGlobal(id){
+function openEditGlobal(id){
   const h=D.global.find(x=>x.id===id);if(!h)return;
-  const nCmp=prompt('Update current price ('+h.currency+') for '+h.sym+':', h.cmp);
-  if(nCmp!==null&&!isNaN(nCmp)){h.cmp=parseFloat(nCmp);save('global');renderGlobal();buildTicker();}
+  document.getElementById('edit-global-id').value=id;
+  document.getElementById('edit-global-title').textContent='Edit — '+h.sym;
+  document.getElementById('edit-gl-shares').value=h.shares;
+  document.getElementById('edit-gl-avg').value=h.avg;
+  document.getElementById('edit-gl-cmp').value=h.cmp;
+  document.getElementById('edit-gl-yahoo').value=h.yahooSym||'';
+  document.getElementById('edit-gl-notes').value=h.notes||'';
+  document.getElementById('edit-gl-add-shares').value='';
+  document.getElementById('edit-gl-add-price').value='';
+  document.getElementById('edit-gl-add-fee').value=0;
+  openModal('mo-edit-global');
+}
+function saveEditGlobal(){
+  const id=parseInt(document.getElementById('edit-global-id').value);
+  const h=D.global.find(x=>x.id===id);if(!h)return;
+  const addShares=parseFloat(document.getElementById('edit-gl-add-shares').value)||0;
+  const addPrice=parseFloat(document.getElementById('edit-gl-add-price').value)||0;
+  if(addShares>0&&addPrice>0){
+    // Recalculate weighted average
+    const oldCost=h.shares*h.avg;
+    const newCost=addShares*addPrice;
+    h.avg=(oldCost+newCost)/(h.shares+addShares);
+    h.shares=h.shares+addShares;
+  }else{
+    h.shares=parseFloat(document.getElementById('edit-gl-shares').value)||h.shares;
+    h.avg=parseFloat(document.getElementById('edit-gl-avg').value)||h.avg;
+  }
+  h.cmp=parseFloat(document.getElementById('edit-gl-cmp').value)||h.cmp;
+  h.yahooSym=document.getElementById('edit-gl-yahoo').value.trim();
+  h.notes=document.getElementById('edit-gl-notes').value;
+  save('global');closeModal('mo-edit-global');renderGlobal();buildTicker();
+}
+function openEditIndia(id){
+  const h=D.india.find(x=>x.id===id);if(!h)return;
+  document.getElementById('edit-india-id').value=id;
+  document.getElementById('edit-india-title').textContent='Edit — '+h.sym;
+  document.getElementById('edit-qty').value=h.qty;
+  document.getElementById('edit-avg').value=h.avg;
+  document.getElementById('edit-cmp').value=h.cmp;
+  document.getElementById('edit-yahoo').value=h.yahooSym||'';
+  document.getElementById('edit-notes').value=h.notes||'';
+  document.getElementById('edit-sector').value=h.sector||'IT';
+  document.getElementById('edit-pledged').value=h.pledged||'No';
+  document.getElementById('edit-add-qty').value='';
+  document.getElementById('edit-add-price').value='';
+  document.getElementById('edit-add-fee').value=0;
+  openModal('mo-edit-india');
+}
+function saveEditIndia(){
+  const id=parseInt(document.getElementById('edit-india-id').value);
+  const h=D.india.find(x=>x.id===id);if(!h)return;
+  const addQty=parseFloat(document.getElementById('edit-add-qty').value)||0;
+  const addPrice=parseFloat(document.getElementById('edit-add-price').value)||0;
+  const addFee=parseFloat(document.getElementById('edit-add-fee').value)||0;
+  if(addQty>0&&addPrice>0){
+    // Weighted average with broker fee factored in
+    const oldCost=h.qty*h.avg+(h.charges||0);
+    const newCost=addQty*addPrice+addFee;
+    h.avg=(oldCost+newCost)/(h.qty+addQty);
+    h.qty=h.qty+addQty;
+    h.charges=(h.charges||0)+addFee;
+  }else{
+    h.qty=parseFloat(document.getElementById('edit-qty').value)||h.qty;
+    h.avg=parseFloat(document.getElementById('edit-avg').value)||h.avg;
+  }
+  h.cmp=parseFloat(document.getElementById('edit-cmp').value)||h.cmp;
+  h.sector=document.getElementById('edit-sector').value;
+  h.pledged=document.getElementById('edit-pledged').value;
+  h.yahooSym=document.getElementById('edit-yahoo').value.trim();
+  h.notes=document.getElementById('edit-notes').value;
+  save('india');closeModal('mo-edit-india');renderIndia();buildTicker();
 }
 
 // ===== INDIA =====
@@ -1112,16 +1245,11 @@ function addIndia(){
   save('india');closeModal('mo-add-india');renderIndia();buildTicker();
 }
 function delIndia(id){if(!confirm('Delete?'))return;D.india=D.india.filter(h=>h.id!==id);save('india');renderIndia();buildTicker();}
-function editCMP(id){
-  const h=D.india.find(x=>x.id===id);if(!h)return;
-  const v=prompt('Update CMP for '+h.sym+':',h.cmp);
-  if(v!==null&&!isNaN(v)){h.cmp=parseFloat(v);save('india');renderIndia();buildTicker();}
-}
 function importCSV(e){const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>{const lines=ev.target.result.split('\n').slice(1);let n=0;lines.forEach(l=>{const c=l.split(',');if(c.length>=5){D.india.push({id:Date.now()+Math.random(),sym:(c[0]||'').trim().toUpperCase(),type:(c[1]||'Equity').trim(),sector:(c[2]||'Other').trim(),broker:(c[3]||'Zerodha').trim(),qty:parseFloat(c[4])||0,avg:parseFloat(c[5])||0,cmp:parseFloat(c[6])||0,charges:parseFloat(c[7])||0,date:(c[8]||'').trim(),pledged:'No',notes:''});n++;}});save('india');renderIndia();buildTicker();alert('Imported '+n);};r.readAsText(f);}
 function renderIndia(){
   const tb=document.getElementById('in-tbody');let iI=0,iC=0;
   if(!D.india.length){tb.innerHTML='<tr><td colspan="14"><div class="empty"><div class="empty-i">📈</div>No India holdings. Import CSV or add manually.</div></td></tr>';}
-  else{tb.innerHTML=D.india.map(h=>{const i=h.qty*h.avg+(h.charges||0),c=h.qty*h.cmp,pnl=c-i,pct=i?pnl/i*100:0;iI+=i;iC+=c;return `<tr><td class="sym">${h.sym}</td><td><span class="badge ${h.type==='ETF'?'bb':h.type==='MF'?'bgold':h.type==='Bond'?'bpu':'bg'}">${h.type}</span></td><td style="font-size:9px;color:var(--text3)">${h.sector}</td><td class="num">${h.qty.toLocaleString()}</td><td class="num">${fI(h.avg)}</td><td class="num">${fI(h.cmp)}</td><td class="num">${fI(i)}</td><td class="num">${fI(c)}</td><td class="num ${pC(pnl)}">${pS(pnl)}${fI(Math.abs(pnl))}</td><td class="num ${pC(pct)}">${fP(pct)}</td><td>${h.pledged==='Yes'?'<span class="badge bor">🔒</span>':'-'}</td><td style="font-size:10px">${h.broker}</td><td><button class="btn btn-o btn-sm" onclick="editCMP(${h.id})">✎</button></td><td><button class="btn btn-d btn-sm" onclick="delIndia(${h.id})">✕</button></td></tr>`;}).join('');}
+  else{tb.innerHTML=D.india.map(h=>{const i=h.qty*h.avg+(h.charges||0),c=h.qty*h.cmp,pnl=c-i,pct=i?pnl/i*100:0;iI+=i;iC+=c;return `<tr><td class="sym">${h.sym}</td><td><span class="badge ${h.type==='ETF'?'bb':h.type==='MF'?'bgold':h.type==='Bond'?'bpu':'bg'}">${h.type}</span></td><td style="font-size:9px;color:var(--text3)">${h.sector}</td><td class="num">${h.qty.toLocaleString()}</td><td class="num">${fI(h.avg)}</td><td class="num">${fI(h.cmp)}</td><td class="num">${fI(i)}</td><td class="num">${fI(c)}</td><td class="num ${pC(pnl)}">${pS(pnl)}${fI(Math.abs(pnl))}</td><td class="num ${pC(pct)}">${fP(pct)}</td><td>${h.pledged==='Yes'?'<span class="badge bor">🔒</span>':'-'}</td><td style="font-size:10px">${h.broker}</td><td style="font-size:10px;color:var(--text3);max-width:120px;overflow:hidden;text-overflow:ellipsis" title="${h.notes||''}">${h.notes?'📝 '+h.notes.substring(0,20)+(h.notes.length>20?'...':''):'-'}</td><td><button class="btn btn-o btn-sm" onclick="openEditIndia(${h.id})">✎ Edit</button></td><td><button class="btn btn-d btn-sm" onclick="delIndia(${h.id})">✕</button></td></tr>`;}).join('');}
   const pnl=iC-iI;setEl('in-inv',fI(iI));setEl('in-cur',fI(iC));setEl('in-pnl',pS(pnl)+fI(Math.abs(pnl)));setCls('in-pnl','mval '+(pnl>=0?'g':'r'));setEl('in-pct',fP(iI?pnl/iI*100:0));setEl('in-pos',D.india.length);
   const sec={};D.india.forEach(h=>{sec[h.sector]=(sec[h.sector]||0)+h.qty*h.cmp;});
   mkC('chartInSector',{type:'doughnut',data:{labels:Object.keys(sec),datasets:[{data:Object.values(sec),backgroundColor:COLORS,borderWidth:1,borderColor:'#070b12'}]},options:{responsive:true,maintainAspectRatio:false,cutout:'62%',plugins:{legend:{position:'right',labels:{color:'#94a3b8',font:{family:'Space Mono',size:8},boxWidth:8}}}}});
